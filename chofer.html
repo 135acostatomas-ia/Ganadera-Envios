@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@700;900&family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
   :root{
-    --navy:#061c5d; --navy-dark:#031343; --red:#e34b00; --white:#ffffff;
+    --navy:#061c5d; --navy-dark:#031343; --red:#e34b00; --blue:#1F6ED4; --blue-border:#7BB4FF; --white:#ffffff;
     --body-bg:#f7f7f9; --grey:#444444; --grey-100:#929292; --grey-300:#dbdbdb; --grey-500:#f5f5f5;
     --font-base:'Lato', sans-serif; --font-title:'Frank Ruhl Libre', serif;
   }
@@ -30,7 +30,7 @@
   .stat-value{ font-family:var(--font-title); font-weight:900; font-size:18px; color:var(--navy-dark); margin:0; }
   .stat-value.small{ font-size:14px; }
   .actions{ margin-top:16px; }
-  button.primary{ width:100%; font-family:var(--font-base); font-size:13px; font-weight:900; text-transform:uppercase; letter-spacing:1px; padding:14px 20px; border-radius:4px; border:none; background:var(--red); color:#fff; cursor:pointer; }
+  button.primary{ width:100%; font-family:var(--font-base); font-size:13px; font-weight:900; text-transform:uppercase; letter-spacing:1px; padding:14px 20px; border-radius:4px; border:none; background:var(--blue); color:#fff; cursor:pointer; }
   button.primary.stop{ background:var(--navy-dark); }
   .status-line{ display:block; margin-top:10px; font-size:12px; color:var(--grey-100); }
   .status-line b{ color:var(--navy-dark); font-weight:700; }
@@ -105,7 +105,7 @@
   var map = L.map('map', {zoomControl:true, attributionControl:false}).setView([-34.6037,-58.3816], 13);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19}).addTo(map);
 
-  var vanIcon = L.divIcon({ className:'', html:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="1" y="1" width="22" height="22" rx="6" fill="#e34b00"/><path d="M6 15.5V9.5C6 8.4 6.9 7.5 8 7.5H13.5V15.5" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/><path d="M13.5 10.5H16.3L18.5 12.7V15.5H13.5" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/><circle cx="9" cy="16" r="1.4" fill="#fff"/><circle cx="16" cy="16" r="1.4" fill="#fff"/></svg>', iconSize:[26,26] });
+  var vanIcon = L.divIcon({ className:'', html:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="1" y="1" width="22" height="22" rx="6" fill="#1F6ED4"/><path d="M6 15.5V9.5C6 8.4 6.9 7.5 8 7.5H13.5V15.5" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/><path d="M13.5 10.5H16.3L18.5 12.7V15.5H13.5" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/><circle cx="9" cy="16" r="1.4" fill="#fff"/><circle cx="16" cy="16" r="1.4" fill="#fff"/></svg>', iconSize:[26,26] });
   var pinIcon = L.divIcon({ className:'', html:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 22s7-7.4 7-12.5A7 7 0 1 0 5 9.5C5 14.6 12 22 12 22Z" fill="#061c5d"/><circle cx="12" cy="9.5" r="2.6" fill="#fff"/></svg>', iconSize:[24,24], iconAnchor:[12,22] });
 
   var myMarker = null, destMarker = null, routeLine = null;
@@ -142,7 +142,7 @@
       document.getElementById('rep-eta').textContent = min + ' min';
       var coords = route.geometry.coordinates.map(function(c){ return [c[1], c[0]]; });
       if (routeLine) map.removeLayer(routeLine);
-      routeLine = L.polyline(coords, {color:'#e34b00', weight:4, opacity:0.75}).addTo(map);
+      routeLine = L.polyline(coords, {color:'#1F6ED4', weight:4, opacity:0.75}).addTo(map);
     } catch(e){ /* silencioso: sigue mostrando el último valor conocido */ }
   }
 
