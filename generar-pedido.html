@@ -3,92 +3,124 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ganadera Panamericana · Crear pedido</title>
+<title>Ganadera Panamericana · Planificador de entregas</title>
 <link rel="icon" type="image/png" href="assets/ganadera-logo.png">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@700;900&family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
   :root{
-    --navy:#061c5d; --navy-dark:#031343; --red:#ef3434; --blue:#1F6ED4; --blue-border:#7BB4FF; --white:#ffffff;
-    --body-bg:#f7f7f9; --grey:#444444; --grey-100:#929292; --grey-300:#dbdbdb; --grey-500:#f5f5f5;
-    --good:#1a7a41; --good-bg:#e9f9ef;
-    --font-base:'Lato', sans-serif; --font-title:'Frank Ruhl Libre', serif;
+    --navy:#061c5d; --navy-dark:#031343; --red:#ef3434; --blue:#1F6ED4; --blue-dark:#1557aa;
+    --white:#ffffff; --body-bg:#f4f7fc; --grey:#444; --grey-100:#7b8495; --grey-200:#cbd2de;
+    --grey-300:#e1e5ec; --grey-500:#f6f8fb; --good:#1a7a41; --good-bg:#e9f9ef;
+    --warning:#9a5d00; --warning-bg:#fff5df; --font-base:'Lato',sans-serif; --font-title:'Frank Ruhl Libre',serif;
   }
-  *{box-sizing:border-box;}
-  body{ margin:0; background:linear-gradient(145deg,#f7f8fc 0%,#eef2fa 100%); color:var(--grey); font-family:var(--font-base); padding:24px; }
-  .app{ max-width:720px; margin:0 auto; border-radius:14px; overflow:hidden; background:var(--white); box-shadow:0 4px 18px rgba(3,19,67,.12); }
-  .topbar{ background:var(--white); color:var(--navy-dark); padding:14px 24px; border-bottom:3px solid var(--red); }
-  .brand{ display:flex; align-items:center; gap:11px; }
-  .brand-symbol{ width:44px; height:44px; object-fit:contain; flex:none; }
-  .brand-wordmark{ width:190px; height:auto; display:block; }
-  .sub{ font-size:11px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; color:var(--red); border-left:1px solid var(--grey-300); padding-left:11px; }
-  .panel{ padding:26px 28px; }
-  label{ display:block; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--grey-100); margin-bottom:6px; }
-  input[type=text]{ width:100%; padding:12px 14px; border:1px solid var(--grey-300); border-radius:6px; font-family:var(--font-base); font-size:14px; color:var(--grey); margin-bottom:16px; }
-  input[type=text]:focus{ outline:none; border-color:var(--navy); }
-  .row2{ display:flex; gap:12px; }
-  .row2 > div{ flex:1; }
-  button.primary{ font-family:var(--font-base); font-size:13px; font-weight:900; text-transform:uppercase; letter-spacing:1px; padding:13px 24px; border-radius:4px; border:none; background:var(--blue); color:#fff; cursor:pointer; }
-  button.primary:hover{ filter:brightness(1.08); }
-  button.ghost{ font-family:var(--font-base); font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; padding:8px 14px; border-radius:4px; border:1px solid var(--grey-300); background:transparent; color:var(--grey); cursor:pointer; }
-  .results{ border:1px solid var(--grey-300); border-radius:6px; margin-bottom:16px; max-height:180px; overflow-y:auto; }
-  .result-item{ padding:10px 12px; font-size:13px; cursor:pointer; border-bottom:1px solid var(--grey-500); }
-  .result-item:last-child{ border-bottom:none; }
-  .result-item:hover{ background:var(--grey-500); }
-  .picked{ background:var(--good-bg); border:1px solid var(--good); border-radius:6px; padding:10px 12px; font-size:13px; color:var(--good); font-weight:700; margin-bottom:16px; display:none; }
-  .status{ font-size:12px; color:var(--grey-100); margin-bottom:16px; min-height:16px; }
-  .config-warning{ padding:12px 24px; background:#fdece2; font-size:12px; color:var(--red); font-weight:700; display:none; }
-  .out{ margin-top:22px; border-top:1px solid var(--grey-300); padding-top:22px; display:none; }
-  .link-box{ display:flex; gap:8px; align-items:center; background:var(--grey-500); border:1px solid var(--grey-300); border-radius:6px; padding:10px 12px; margin-bottom:12px; }
-  .link-box span{ font-family:monospace; font-size:11.5px; color:var(--grey); flex:1; overflow-x:auto; white-space:nowrap; }
-  .link-label{ font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:.05em; color:var(--navy-dark); margin-bottom:6px; }
-  @media (max-width:560px){
-    body{ padding:0; }
-    .app{ border-radius:0; min-height:100vh; }
-    .panel{ padding:22px 20px; }
-    .brand-wordmark{ width:150px; }
-    .sub{ display:none; }
-  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(145deg,#f7f8fc 0%,#eaf0f9 100%);color:var(--grey);font-family:var(--font-base);padding:24px}
+  .app{max-width:1180px;margin:0 auto;border-radius:16px;overflow:hidden;background:var(--white);box-shadow:0 8px 30px rgba(3,19,67,.12)}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:18px;background:var(--white);padding:14px 24px;border-bottom:3px solid var(--red)}
+  .brand{display:flex;align-items:center;gap:11px}.brand-symbol{width:44px;height:44px;object-fit:contain}.brand-wordmark{width:190px;height:auto;display:block}
+  .topbar-copy{border-left:1px solid var(--grey-300);padding-left:14px}.topbar-title{font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--red)}
+  .topbar-sub{font-size:11px;color:var(--grey-100);margin-top:3px}.config-warning{padding:12px 24px;background:#fdece2;font-size:12px;color:var(--red);font-weight:700;display:none}
+  .workspace{display:grid;grid-template-columns:minmax(340px,420px) minmax(0,1fr);min-height:680px}
+  .form-column{padding:24px;border-right:1px solid var(--grey-300);background:#fff}.route-column{padding:24px;background:var(--grey-500)}
+  .section-title{font-family:var(--font-title);font-size:22px;font-weight:900;color:var(--navy-dark);margin:0 0 4px}.section-copy{font-size:12px;color:var(--grey-100);line-height:1.5;margin:0 0 20px}
+  .card{background:#fff;border:1px solid var(--grey-300);border-radius:10px;padding:16px;margin-bottom:16px}.card-title{margin:0 0 13px;font-size:11px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;color:var(--navy)}
+  label{display:block;font-size:10.5px;font-weight:900;text-transform:uppercase;letter-spacing:.055em;color:var(--grey-100);margin-bottom:6px}
+  input,textarea{width:100%;padding:11px 12px;border:1px solid var(--grey-200);border-radius:6px;font-family:var(--font-base);font-size:13px;color:var(--grey);background:#fff}
+  input:focus,textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(31,110,212,.1)} textarea{resize:vertical;min-height:78px}
+  .field{margin-bottom:13px}.field:last-child{margin-bottom:0}.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  .search-row{display:flex;gap:8px}.search-row input{flex:1}.search-row button{flex:none}.status{font-size:11px;color:var(--grey-100);min-height:15px;margin-top:6px}
+  .results{border:1px solid var(--grey-300);border-radius:6px;margin-top:7px;max-height:150px;overflow:auto;display:none;background:#fff}.result-item{padding:9px 10px;font-size:12px;line-height:1.35;cursor:pointer;border-bottom:1px solid var(--grey-300)}.result-item:last-child{border-bottom:0}.result-item:hover{background:#eef4fd}
+  .picked{display:none;margin-top:7px;background:var(--good-bg);border:1px solid #8dd5a7;color:var(--good);border-radius:6px;padding:9px 10px;font-size:11.5px;font-weight:700;line-height:1.4}
+  button{font-family:var(--font-base);cursor:pointer}.primary{border:0;border-radius:5px;background:var(--blue);color:#fff;padding:12px 16px;font-size:11.5px;font-weight:900;letter-spacing:.06em;text-transform:uppercase}.primary:hover{background:var(--blue-dark)}.primary:disabled{opacity:.5;cursor:not-allowed}
+  .primary.full{width:100%}.secondary{border:1px solid var(--grey-200);border-radius:5px;background:#fff;color:var(--navy);padding:10px 13px;font-size:10.5px;font-weight:900;letter-spacing:.04em;text-transform:uppercase}.secondary:hover{background:#eef4fd;border-color:var(--blue)}
+  .danger{color:#b42318}.edit-note{display:none;background:var(--warning-bg);border:1px solid #f0cc85;color:var(--warning);padding:9px 10px;border-radius:6px;font-size:11.5px;font-weight:700;margin-bottom:12px}
+  .route-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.route-toolbar .primary,.route-toolbar .secondary{flex:1;min-width:135px}
+  .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}.summary-item{background:#fff;border:1px solid var(--grey-300);border-radius:8px;padding:10px}.summary-label{display:block;font-size:9px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:var(--grey-100);margin-bottom:4px}.summary-value{font-family:var(--font-title);font-weight:900;font-size:17px;color:var(--navy-dark)}
+  #route-map{height:260px;border:1px solid var(--grey-300);border-radius:9px;margin-bottom:14px;background:#e9edf4}.empty{padding:28px 18px;text-align:center;background:#fff;border:1px dashed var(--grey-200);border-radius:9px;color:var(--grey-100);font-size:12px;line-height:1.5}
+  .stop-list{display:flex;flex-direction:column;gap:9px}.stop{display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:10px;align-items:start;background:#fff;border:1px solid var(--grey-300);border-radius:9px;padding:11px}.stop-number{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:var(--navy);color:#fff;font-family:var(--font-title);font-size:16px;font-weight:900}
+  .stop-title{font-size:13px;font-weight:900;color:var(--navy-dark);margin-bottom:3px}.stop-address{font-size:11.5px;line-height:1.35;color:var(--grey-100)}.stop-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}.tag{font-size:9.5px;font-weight:700;color:var(--navy);background:#eef3fb;border-radius:999px;padding:4px 7px}.tag.eta{background:var(--good-bg);color:var(--good)}.tag.late{background:#fdece2;color:#b42318}.stop-actions{display:grid;grid-template-columns:1fr 1fr;gap:5px}.icon-btn{width:30px;height:28px;border:1px solid var(--grey-200);border-radius:5px;background:#fff;color:var(--navy);font-weight:900}.icon-btn:hover{background:#eef4fd}.icon-btn.remove{color:#b42318}
+  .saved{display:none;margin-top:16px;background:var(--good-bg);border:1px solid #8dd5a7;border-radius:9px;padding:14px}.saved-title{font-size:12px;font-weight:900;color:var(--good);margin-bottom:10px}.saved-row{background:#fff;border-radius:6px;padding:9px;margin-top:7px}.saved-row b{font-size:11px;color:var(--navy-dark)}.links{display:flex;gap:8px;margin-top:6px}.links a{font-size:10.5px;color:var(--blue);font-weight:700;text-decoration:none}
+  .marker-number{display:flex;align-items:center;justify-content:center;width:28px;height:28px;background:var(--navy);color:#fff;border:2px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(3,19,67,.3);font:900 13px var(--font-base)}.marker-origin{background:var(--red)}
+  @media(max-width:900px){body{padding:12px}.workspace{grid-template-columns:1fr}.form-column{border-right:0;border-bottom:1px solid var(--grey-300)}}
+  @media(max-width:560px){body{padding:0}.app{border-radius:0;min-height:100vh}.topbar{padding:10px 14px}.brand-symbol{width:38px;height:38px}.brand-wordmark{width:145px}.topbar-copy{display:none}.form-column,.route-column{padding:18px}.grid-3{grid-template-columns:1fr 1fr}.summary{grid-template-columns:1fr 1fr}.summary-item:last-child{grid-column:1/-1}.stop{grid-template-columns:34px minmax(0,1fr)}.stop-actions{grid-column:2;display:flex}}
 </style>
 </head>
 <body>
-
 <div class="app">
-  <div class="config-warning" id="config-warning">Falta configurar Firebase: reemplazá TODO_FIREBASE_CONFIG en el código.</div>
-  <div class="topbar">
+  <div class="config-warning" id="config-warning">Falta configurar Firebase.</div>
+  <header class="topbar">
     <div class="brand">
       <img class="brand-symbol" src="assets/ganadera-logo.png" alt="Ganadera Panamericana">
       <img class="brand-wordmark" src="assets/ganadera-panamericana.png" alt="Ganadera Panamericana">
-      <div class="sub">Crear pedido para rastreo</div>
     </div>
-  </div>
-  <div class="panel">
-    <label>Dirección de entrega</label>
-    <div class="row2">
-      <div><input type="text" id="direccion" placeholder="Ej: Av. Rivadavia 4500, Caballito"></div>
-    </div>
-    <button class="ghost" id="btn-buscar" style="margin-bottom:16px;">Buscar dirección</button>
-    <div class="status" id="search-status"></div>
-    <div class="results" id="results" style="display:none;"></div>
-    <div class="picked" id="picked"></div>
+    <div class="topbar-copy"><div class="topbar-title">Planificador de entregas</div><div class="topbar-sub">Armá, optimizá y modificá la ruta del día</div></div>
+  </header>
 
-    <label>ID del pedido</label>
-    <input type="text" id="pedido-id">
+  <main class="workspace">
+    <section class="form-column">
+      <h1 class="section-title">Nueva entrega</h1>
+      <p class="section-copy">Cargá los pedidos de la jornada. Podés editarlos antes o después de calcular la ruta.</p>
 
-    <label>Nombre del cliente (opcional, solo de referencia)</label>
-    <input type="text" id="cliente-nombre" placeholder="Ej: Juan Pérez">
+      <div class="card">
+        <h2 class="card-title">Configuración de la jornada</h2>
+        <div class="grid-3">
+          <div class="field"><label for="route-date">Fecha</label><input type="date" id="route-date"></div>
+          <div class="field"><label for="departure-time">Hora de salida</label><input type="time" id="departure-time" value="08:00"></div>
+          <div class="field"><label for="service-minutes">Min. por entrega</label><input type="number" id="service-minutes" min="1" max="120" value="10"></div>
+        </div>
+        <div class="field">
+          <label for="origin-address">Dirección de salida (opcional)</label>
+          <div class="search-row"><input type="text" id="origin-address" placeholder="Depósito o punto de partida"><button class="secondary" type="button" id="btn-search-origin">Buscar</button></div>
+          <div class="status" id="origin-status"></div><div class="results" id="origin-results"></div><div class="picked" id="origin-picked"></div>
+        </div>
+      </div>
 
-    <button class="primary" id="btn-crear">Crear pedido y generar links</button>
+      <div class="edit-note" id="edit-note">Editando una parada. Guardá los cambios o cancelá la edición.</div>
+      <div class="field">
+        <label for="address">Dirección</label>
+        <div class="search-row"><input type="text" id="address" placeholder="Ej: Av. Rivadavia 4500, Caballito"><button class="secondary" type="button" id="btn-search-address">Buscar</button></div>
+        <div class="status" id="address-status"></div><div class="results" id="address-results"></div><div class="picked" id="address-picked"></div>
+      </div>
+      <div class="grid-2">
+        <div class="field"><label for="order-id">N° de pedido</label><input type="text" id="order-id"></div>
+        <div class="field"><label for="customer-name">Nombre del cliente</label><input type="text" id="customer-name"></div>
+      </div>
+      <div class="field"><label for="customer-phone">Teléfono</label><input type="text" inputmode="tel" autocomplete="tel" id="customer-phone" placeholder="Ej: 11 5555-5555"></div>
+      <div class="field">
+        <label>Rango de horario</label>
+        <div class="grid-2"><input type="time" id="window-from" aria-label="Horario desde"><input type="time" id="window-to" aria-label="Horario hasta"></div>
+      </div>
+      <div class="field"><label for="comments">Comentarios</label><textarea id="comments" placeholder="Descripción del lugar, piso, número de departamento o indicaciones de entrega"></textarea></div>
+      <button class="primary full" type="button" id="btn-add-order">Agregar pedido a la ruta</button>
+      <button class="secondary full" type="button" id="btn-cancel-edit" style="display:none;margin-top:8px">Cancelar edición</button>
+    </section>
 
-    <div class="out" id="out">
-      <div class="link-label">Link para el chofer</div>
-      <div class="link-box"><span id="link-chofer"></span><button class="ghost" data-copy="link-chofer">Copiar</button></div>
-      <div class="link-label">Link para el cliente</div>
-      <div class="link-box"><span id="link-cliente"></span><button class="ghost" data-copy="link-cliente">Copiar</button></div>
-    </div>
-  </div>
+    <section class="route-column">
+      <h2 class="section-title">Ruta del día</h2>
+      <p class="section-copy">El tiempo estimado incluye viaje, espera por ventana horaria y <b id="service-copy">10 minutos</b> de servicio en cada parada.</p>
+      <div class="route-toolbar">
+        <button class="primary" type="button" id="btn-optimize">Optimizar ruta</button>
+        <button class="secondary" type="button" id="btn-recalculate">Recalcular horarios</button>
+        <button class="secondary" type="button" id="btn-load-route">Cargar ruta del día</button>
+        <button class="secondary" type="button" id="btn-save-route">Guardar ruta</button>
+      </div>
+      <div class="summary">
+        <div class="summary-item"><span class="summary-label">Pedidos</span><span class="summary-value" id="summary-orders">0</span></div>
+        <div class="summary-item"><span class="summary-label">Distancia</span><span class="summary-value" id="summary-distance">—</span></div>
+        <div class="summary-item"><span class="summary-label">Fin estimado</span><span class="summary-value" id="summary-finish">—</span></div>
+      </div>
+      <div id="route-map"></div>
+      <div class="status" id="route-status"></div>
+      <div class="empty" id="empty-route">Todavía no hay pedidos.<br>Agregá la primera entrega para comenzar a armar la ruta.</div>
+      <div class="stop-list" id="stop-list"></div>
+      <div class="saved" id="saved-route"><div class="saved-title" id="saved-title"></div><div id="saved-links"></div></div>
+    </section>
+  </main>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
@@ -103,75 +135,416 @@
     measurementId: "G-WBBF6N5TM2"
   };
   var configured = firebaseConfig !== "TODO_FIREBASE_CONFIG";
-  if (!configured) document.getElementById('config-warning').style.display = 'block';
-
   var db = null;
   if (configured) { firebase.initializeApp(firebaseConfig); db = firebase.database(); }
+  else { document.getElementById('config-warning').style.display = 'block'; }
 
-  document.getElementById('pedido-id').value = 'pedido-' + Math.floor(1000 + Math.random() * 9000);
+  var orders = [];
+  var selectedDestination = null;
+  var origin = null;
+  var editIndex = null;
+  var currentRouteId = null;
+  var previousRouteOrderIds = [];
+  var routeLayer = null;
+  var markerLayer = L.layerGroup();
+  var map = L.map('route-map', {attributionControl:false}).setView([-34.6037,-58.3816], 11);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19}).addTo(map);
+  markerLayer.addTo(map);
 
-  var destino = null;
+  function todayValue(){
+    var now = new Date();
+    var offset = now.getTimezoneOffset() * 60000;
+    return new Date(now.getTime() - offset).toISOString().slice(0,10);
+  }
+  document.getElementById('route-date').value = todayValue();
 
-  document.getElementById('btn-buscar').addEventListener('click', async function(){
-    var q = document.getElementById('direccion').value.trim();
-    if (!q) return;
-    document.getElementById('search-status').textContent = 'Buscando...';
-    document.getElementById('results').style.display = 'none';
-    document.getElementById('picked').style.display = 'none';
+  function newOrderId(){ return 'pedido-' + Math.floor(1000 + Math.random() * 9000); }
+  document.getElementById('order-id').value = newOrderId();
+
+  function escapeHtml(value){
+    return String(value == null ? '' : value).replace(/[&<>"']/g, function(char){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char];
+    });
+  }
+
+  async function geocode(query){
+    var url = 'https://nominatim.openstreetmap.org/search?format=json&limit=6&countrycodes=ar&q=' + encodeURIComponent(query);
+    var response = await fetch(url, {headers:{'Accept-Language':'es'}});
+    if (!response.ok) throw new Error('No se pudo consultar la dirección.');
+    return response.json();
+  }
+
+  function showResults(containerId, results, onPick){
+    var box = document.getElementById(containerId);
+    box.innerHTML = '';
+    results.forEach(function(item){
+      var row = document.createElement('div');
+      row.className = 'result-item';
+      row.textContent = item.display_name;
+      row.addEventListener('click', function(){
+        onPick({lat:parseFloat(item.lat),lng:parseFloat(item.lon),direccion:item.display_name});
+        box.style.display = 'none';
+      });
+      box.appendChild(row);
+    });
+    box.style.display = results.length ? 'block' : 'none';
+  }
+
+  async function searchLocation(inputId, statusId, resultsId, onPick){
+    var query = document.getElementById(inputId).value.trim();
+    var status = document.getElementById(statusId);
+    if (!query) { status.textContent = 'Escribí una dirección primero.'; return; }
+    status.textContent = 'Buscando...';
     try {
-      var url = 'https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=ar&q=' + encodeURIComponent(q);
-      var res = await fetch(url, { headers: { 'Accept-Language': 'es' } });
-      var data = await res.json();
-      document.getElementById('search-status').textContent = data.length ? '' : 'No se encontraron resultados. Probá con más detalle (ciudad, provincia).';
-      var box = document.getElementById('results');
-      box.innerHTML = '';
-      data.forEach(function(item){
-        var div = document.createElement('div');
-        div.className = 'result-item';
-        div.textContent = item.display_name;
-        div.addEventListener('click', function(){
-          destino = { lat: parseFloat(item.lat), lng: parseFloat(item.lon), direccion: item.display_name };
-          document.getElementById('picked').style.display = 'block';
-          document.getElementById('picked').textContent = '✓ ' + item.display_name;
-          box.style.display = 'none';
-        });
-        box.appendChild(div);
-      });
-      if (data.length) box.style.display = 'block';
-    } catch (e) {
-      document.getElementById('search-status').textContent = 'Error buscando la dirección.';
+      var data = await geocode(query);
+      status.textContent = data.length ? 'Seleccioná la dirección correcta.' : 'No encontramos resultados. Agregá localidad o provincia.';
+      showResults(resultsId, data, onPick);
+    } catch (error) {
+      status.textContent = error.message || 'Error buscando la dirección.';
     }
-  });
+  }
 
-  document.getElementById('btn-crear').addEventListener('click', async function(){
-    if (!configured){ alert('Configurá Firebase primero.'); return; }
-    if (!destino){ alert('Buscá y seleccioná la dirección de entrega primero.'); return; }
-    var id = document.getElementById('pedido-id').value.trim();
-    if (!id){ alert('Poné un ID de pedido.'); return; }
-
-    await db.ref('pedidos/' + id).set({
-      destino: destino,
-      cliente: document.getElementById('cliente-nombre').value.trim() || null,
-      creado: Date.now(),
-      estado: 'pendiente'
+  document.getElementById('btn-search-origin').addEventListener('click', function(){
+    searchLocation('origin-address','origin-status','origin-results',function(location){
+      origin = location;
+      document.getElementById('origin-address').value = location.direccion;
+      var picked = document.getElementById('origin-picked');
+      picked.textContent = 'Salida: ' + location.direccion; picked.style.display = 'block';
+      document.getElementById('origin-status').textContent = '';
+      refreshRoute(false);
     });
-
-    var base = window.location.href.replace(/generar-pedido\.html.*$/, '');
-    var chofer = base + 'chofer.html?id=' + encodeURIComponent(id);
-    var cliente = base + 'cliente.html?id=' + encodeURIComponent(id);
-    document.getElementById('link-chofer').textContent = chofer;
-    document.getElementById('link-cliente').textContent = cliente;
-    document.getElementById('out').style.display = 'block';
+  });
+  document.getElementById('btn-search-address').addEventListener('click', function(){
+    searchLocation('address','address-status','address-results',function(location){
+      selectedDestination = location;
+      document.getElementById('address').value = location.direccion;
+      var picked = document.getElementById('address-picked');
+      picked.textContent = 'Dirección seleccionada: ' + location.direccion; picked.style.display = 'block';
+      document.getElementById('address-status').textContent = '';
+    });
   });
 
-  document.querySelectorAll('[data-copy]').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      var text = document.getElementById(btn.getAttribute('data-copy')).textContent;
-      navigator.clipboard.writeText(text).then(function(){
-        var old = btn.textContent; btn.textContent = 'Copiado'; setTimeout(function(){ btn.textContent = old; }, 1200);
+  ['origin-address','address'].forEach(function(id){
+    document.getElementById(id).addEventListener('keydown',function(event){
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        document.getElementById(id === 'origin-address' ? 'btn-search-origin' : 'btn-search-address').click();
+      }
+    });
+  });
+
+  function readOrderForm(){
+    return {
+      id:document.getElementById('order-id').value.trim(),
+      cliente:document.getElementById('customer-name').value.trim(),
+      telefono:document.getElementById('customer-phone').value.trim(),
+      horarioDesde:document.getElementById('window-from').value,
+      horarioHasta:document.getElementById('window-to').value,
+      comentarios:document.getElementById('comments').value.trim(),
+      destino:selectedDestination
+    };
+  }
+
+  function validateOrder(order){
+    if (!order.destino) return 'Buscá y seleccioná la dirección de entrega.';
+    if (!order.id) return 'Ingresá el número de pedido.';
+    if (!order.cliente) return 'Ingresá el nombre del cliente.';
+    if (!order.telefono) return 'Ingresá el teléfono del cliente.';
+    if (!order.horarioDesde || !order.horarioHasta) return 'Completá el rango horario.';
+    if (order.horarioHasta <= order.horarioDesde) return 'El final del rango debe ser posterior al inicio.';
+    var duplicate = orders.some(function(item,index){ return item.id === order.id && index !== editIndex; });
+    if (duplicate) return 'Ya existe un pedido con ese número.';
+    return '';
+  }
+
+  function clearOrderForm(){
+    ['customer-name','customer-phone','window-from','window-to','comments','address'].forEach(function(id){ document.getElementById(id).value = ''; });
+    document.getElementById('order-id').value = newOrderId();
+    document.getElementById('address-picked').style.display = 'none';
+    document.getElementById('address-results').style.display = 'none';
+    document.getElementById('address-status').textContent = '';
+    selectedDestination = null; editIndex = null;
+    document.getElementById('edit-note').style.display = 'none';
+    document.getElementById('btn-cancel-edit').style.display = 'none';
+    document.getElementById('btn-add-order').textContent = 'Agregar pedido a la ruta';
+  }
+
+  document.getElementById('btn-add-order').addEventListener('click', async function(){
+    var order = readOrderForm();
+    var error = validateOrder(order);
+    if (error) { alert(error); return; }
+    if (editIndex == null) orders.push(order); else orders[editIndex] = Object.assign(orders[editIndex],order);
+    clearOrderForm();
+    document.getElementById('saved-route').style.display = 'none';
+    await refreshRoute(false);
+  });
+  document.getElementById('btn-cancel-edit').addEventListener('click', clearOrderForm);
+
+  function routeStartMs(){
+    var date = document.getElementById('route-date').value || todayValue();
+    var time = document.getElementById('departure-time').value || '08:00';
+    return new Date(date + 'T' + time + ':00').getTime();
+  }
+  function windowMs(time){
+    if (!time) return null;
+    return new Date((document.getElementById('route-date').value || todayValue()) + 'T' + time + ':00').getTime();
+  }
+  function serviceSeconds(){ return Math.max(60,Number(document.getElementById('service-minutes').value || 10) * 60); }
+  function formatClock(ms){ return new Date(ms).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}); }
+  function formatDuration(seconds){
+    var minutes = Math.max(0,Math.round(seconds/60));
+    if (minutes < 60) return minutes + ' min';
+    return Math.floor(minutes/60) + ' h ' + (minutes%60) + ' min';
+  }
+  function haversine(a,b){
+    var radius = 6371, toRad = Math.PI/180;
+    var dLat=(b.lat-a.lat)*toRad,dLng=(b.lng-a.lng)*toRad;
+    var value=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(a.lat*toRad)*Math.cos(b.lat*toRad)*Math.sin(dLng/2)*Math.sin(dLng/2);
+    return radius*2*Math.atan2(Math.sqrt(value),Math.sqrt(1-value));
+  }
+  async function matrixFor(points){
+    if (points.length < 2) return {durations:[[0]],distances:[[0]]};
+    try {
+      var coords = points.map(function(point){ return point.lng + ',' + point.lat; }).join(';');
+      var response = await fetch('https://router.project-osrm.org/table/v1/driving/' + coords + '?annotations=duration,distance');
+      var data = await response.json();
+      if (data.code !== 'Ok') throw new Error('OSRM');
+      return data;
+    } catch (error) {
+      var durations=[],distances=[];
+      points.forEach(function(from,i){
+        durations[i]=[];distances[i]=[];
+        points.forEach(function(to,j){
+          var km = i === j ? 0 : haversine(from,to) * 1.25;
+          distances[i][j]=km*1000;durations[i][j]=km/28*3600;
+        });
       });
+      document.getElementById('route-status').textContent = 'Se usó una estimación aproximada porque el servicio de rutas no respondió.';
+      return {durations:durations,distances:distances};
+    }
+  }
+
+  function greedyOrder(matrix,hasOrigin){
+    if (orders.length < 2) return orders.slice();
+    var remaining = orders.map(function(order,index){ return {order:order,matrixIndex:index+(hasOrigin?1:0)}; });
+    var result=[],currentIndex,currentTime=routeStartMs();
+    if (hasOrigin) currentIndex=0;
+    else {
+      var first=remaining.shift();result.push(first.order);currentIndex=first.matrixIndex;
+      var firstWindowStart=windowMs(first.order.horarioDesde);
+      if(firstWindowStart&&currentTime<firstWindowStart)currentTime=firstWindowStart;
+      currentTime += serviceSeconds()*1000;
+    }
+    while (remaining.length) {
+      var bestPosition=0,bestScore=Infinity;
+      remaining.forEach(function(candidate,index){
+        var travel=(matrix.durations[currentIndex][candidate.matrixIndex]||0)*1000;
+        var arrival=currentTime+travel;
+        var start=windowMs(candidate.order.horarioDesde);
+        var end=windowMs(candidate.order.horarioHasta);
+        var serviceStart=start && arrival<start ? start : arrival;
+        var late=end && serviceStart>end ? serviceStart-end : 0;
+        var score=serviceStart+late*20;
+        if(score<bestScore){bestScore=score;bestPosition=index;}
+      });
+      var selected=remaining.splice(bestPosition,1)[0];
+      var trip=(matrix.durations[currentIndex][selected.matrixIndex]||0)*1000;
+      var eta=currentTime+trip;
+      var windowStart=windowMs(selected.order.horarioDesde);
+      if(windowStart&&eta<windowStart)eta=windowStart;
+      currentTime=eta+serviceSeconds()*1000;currentIndex=selected.matrixIndex;result.push(selected.order);
+    }
+    return result;
+  }
+
+  async function drawRoute(points){
+    if(routeLayer){map.removeLayer(routeLayer);routeLayer=null;}
+    if(points.length<2)return;
+    try{
+      var coords=points.map(function(point){return point.lng+','+point.lat;}).join(';');
+      var response=await fetch('https://router.project-osrm.org/route/v1/driving/'+coords+'?overview=full&geometries=geojson');
+      var data=await response.json();
+      if(data.code!=='Ok')return;
+      var latlngs=data.routes[0].geometry.coordinates.map(function(coord){return [coord[1],coord[0]];});
+      routeLayer=L.polyline(latlngs,{color:'#1F6ED4',weight:5,opacity:.78}).addTo(map);
+    }catch(error){}
+  }
+
+  function renderMap(){
+    markerLayer.clearLayers();
+    var bounds=[];
+    if(origin){
+      var originIcon=L.divIcon({className:'',html:'<div class="marker-number marker-origin">S</div>',iconSize:[28,28],iconAnchor:[14,14]});
+      L.marker([origin.lat,origin.lng],{icon:originIcon}).bindTooltip('Salida').addTo(markerLayer);bounds.push([origin.lat,origin.lng]);
+    }
+    orders.forEach(function(order,index){
+      var icon=L.divIcon({className:'',html:'<div class="marker-number">'+(index+1)+'</div>',iconSize:[28,28],iconAnchor:[14,14]});
+      L.marker([order.destino.lat,order.destino.lng],{icon:icon}).bindTooltip((index+1)+'. '+order.cliente).addTo(markerLayer);
+      bounds.push([order.destino.lat,order.destino.lng]);
     });
+    if(bounds.length)map.fitBounds(bounds,{padding:[28,28],maxZoom:14});
+  }
+
+  function renderOrders(){
+    var list=document.getElementById('stop-list'),empty=document.getElementById('empty-route');
+    list.innerHTML='';empty.style.display=orders.length?'none':'block';
+    orders.forEach(function(order,index){
+      var late=order.late;
+      var etaText=order.eta?formatClock(order.eta):'Pendiente';
+      var cumulative=order.elapsedSeconds!=null?'Llega en '+formatDuration(order.elapsedSeconds):'Sin calcular';
+      var row=document.createElement('article');row.className='stop';
+      row.innerHTML='<div class="stop-number">'+(index+1)+'</div>'+
+        '<div><div class="stop-title">'+escapeHtml(order.id)+' · '+escapeHtml(order.cliente)+'</div>'+
+        '<div class="stop-address">'+escapeHtml(order.destino.direccion)+'</div>'+
+        '<div class="stop-meta"><span class="tag eta '+(late?'late':'')+'">ETA '+etaText+'</span><span class="tag">'+cumulative+'</span><span class="tag">'+escapeHtml(order.horarioDesde)+'–'+escapeHtml(order.horarioHasta)+'</span><span class="tag">'+formatDuration(serviceSeconds())+' de entrega</span></div></div>'+
+        '<div class="stop-actions"><button class="icon-btn" data-action="up" title="Subir parada">↑</button><button class="icon-btn" data-action="down" title="Bajar parada">↓</button><button class="icon-btn" data-action="edit" title="Editar parada">✎</button><button class="icon-btn remove" data-action="remove" title="Eliminar parada">×</button></div>';
+      row.querySelectorAll('[data-action]').forEach(function(button){
+        button.addEventListener('click',function(){handleStopAction(index,button.getAttribute('data-action'));});
+      });
+      list.appendChild(row);
+    });
+    document.getElementById('summary-orders').textContent=orders.length;
+  }
+
+  async function handleStopAction(index,action){
+    if(action==='up'&&index>0){var item=orders.splice(index,1)[0];orders.splice(index-1,0,item);await refreshRoute(false);}
+    if(action==='down'&&index<orders.length-1){var moved=orders.splice(index,1)[0];orders.splice(index+1,0,moved);await refreshRoute(false);}
+    if(action==='remove'){orders.splice(index,1);if(editIndex===index)clearOrderForm();await refreshRoute(false);}
+    if(action==='edit'){
+      var order=orders[index];editIndex=index;selectedDestination=order.destino;
+      document.getElementById('order-id').value=order.id;document.getElementById('customer-name').value=order.cliente;
+      document.getElementById('customer-phone').value=order.telefono;document.getElementById('window-from').value=order.horarioDesde;
+      document.getElementById('window-to').value=order.horarioHasta;document.getElementById('comments').value=order.comentarios||'';
+      document.getElementById('address').value=order.destino.direccion;
+      var picked=document.getElementById('address-picked');picked.textContent='Dirección seleccionada: '+order.destino.direccion;picked.style.display='block';
+      document.getElementById('edit-note').style.display='block';document.getElementById('btn-cancel-edit').style.display='block';
+      document.getElementById('btn-add-order').textContent='Guardar cambios del pedido';document.querySelector('.form-column').scrollIntoView({behavior:'smooth'});
+    }
+  }
+
+  async function refreshRoute(optimize){
+    document.getElementById('route-status').textContent=orders.length?'Calculando recorrido...':'';
+    document.getElementById('service-copy').textContent=Math.round(serviceSeconds()/60)+' minutos';
+    renderOrders();renderMap();
+    if(!orders.length){
+      document.getElementById('summary-distance').textContent='—';document.getElementById('summary-finish').textContent='—';
+      if(routeLayer){map.removeLayer(routeLayer);routeLayer=null;}return;
+    }
+    var points=(origin?[origin]:[]).concat(orders.map(function(order){return order.destino;}));
+    var matrix=await matrixFor(points);
+    if(optimize){
+      orders=greedyOrder(matrix,!!origin);
+      points=(origin?[origin]:[]).concat(orders.map(function(order){return order.destino;}));
+      matrix=await matrixFor(points);
+    }
+    var now=routeStartMs(),totalDistance=0,svc=serviceSeconds();
+    orders.forEach(function(order,index){
+      var toIndex=index+(origin?1:0),travel=0,distance=0;
+      if(origin||index>0){
+        var fromIndex=origin?toIndex-1:index-1;
+        travel=matrix.durations[fromIndex][toIndex]||0;distance=matrix.distances[fromIndex][toIndex]||0;
+      }
+      var rawArrival=now+travel*1000,start=windowMs(order.horarioDesde),end=windowMs(order.horarioHasta);
+      var arrival=start&&rawArrival<start?start:rawArrival;
+      order.waitSeconds=Math.max(0,(arrival-rawArrival)/1000);order.travelSeconds=travel;order.distanceMeters=distance;
+      order.eta=arrival;order.late=!!(end&&arrival>end);order.elapsedSeconds=(arrival-routeStartMs())/1000;
+      now=arrival+svc*1000;totalDistance+=distance;
+    });
+    document.getElementById('summary-distance').textContent=(totalDistance/1000).toFixed(1)+' km';
+    document.getElementById('summary-finish').textContent=formatClock(now);
+    document.getElementById('route-status').textContent=optimize?'Ruta optimizada. Podés modificar el orden con las flechas.':'Horarios actualizados.';
+    renderOrders();renderMap();await drawRoute(points);
+  }
+
+  document.getElementById('btn-optimize').addEventListener('click',function(){refreshRoute(true);});
+  document.getElementById('btn-recalculate').addEventListener('click',function(){refreshRoute(false);});
+  ['route-date','departure-time','service-minutes'].forEach(function(id){
+    document.getElementById(id).addEventListener('change',function(){refreshRoute(false);});
   });
+
+  document.getElementById('btn-load-route').addEventListener('click',async function(){
+    if(!configured){alert('Configurá Firebase primero.');return;}
+    var button=this,date=document.getElementById('route-date').value||todayValue();
+    button.disabled=true;button.textContent='Cargando...';
+    try{
+      var snapshot=await db.ref('rutas').orderByChild('fecha').equalTo(date).once('value');
+      var selectedId=null,selectedRoute=null;
+      snapshot.forEach(function(child){
+        var value=child.val();
+        if(!selectedRoute||(value.actualizada||0)>(selectedRoute.actualizada||0)){selectedId=child.key;selectedRoute=value;}
+      });
+      if(!selectedRoute){alert('No hay una ruta guardada para esta fecha.');return;}
+      var routeStops=Array.isArray(selectedRoute.pedidos)?selectedRoute.pedidos:Object.values(selectedRoute.pedidos||{});
+      routeStops.sort(function(a,b){return (a.orden||0)-(b.orden||0);});
+      var loaded=await Promise.all(routeStops.map(async function(stop){
+        var orderSnapshot=await db.ref('pedidos/'+stop.pedidoId).once('value');
+        var value=orderSnapshot.val()||{};
+        return {id:stop.pedidoId,cliente:value.cliente||'',telefono:value.telefono||'',horarioDesde:value.horarioDesde||'',horarioHasta:value.horarioHasta||'',comentarios:value.comentarios||'',destino:value.destino||stop.destino};
+      }));
+      orders=loaded;currentRouteId=selectedId;previousRouteOrderIds=loaded.map(function(order){return order.id;});
+      origin=selectedRoute.origen||null;
+      document.getElementById('departure-time').value=selectedRoute.horaSalida||'08:00';
+      document.getElementById('service-minutes').value=selectedRoute.tiempoServicioMinutos||10;
+      if(origin){
+        document.getElementById('origin-address').value=origin.direccion||'';
+        var picked=document.getElementById('origin-picked');picked.textContent='Salida: '+(origin.direccion||'Punto guardado');picked.style.display='block';
+      }else{
+        document.getElementById('origin-address').value='';document.getElementById('origin-picked').style.display='none';
+      }
+      document.getElementById('saved-route').style.display='none';
+      await refreshRoute(false);
+      document.getElementById('route-status').textContent='Ruta cargada. Podés editarla y volver a guardarla.';
+      document.getElementById('btn-save-route').textContent='Actualizar ruta';
+    }catch(error){alert('No se pudo cargar la ruta: '+error.message);}
+    finally{button.disabled=false;button.textContent='Cargar ruta del día';}
+  });
+
+  document.getElementById('btn-save-route').addEventListener('click',async function(){
+    if(!configured){alert('Configurá Firebase primero.');return;}
+    if(!orders.length){alert('Agregá al menos un pedido.');return;}
+    await refreshRoute(false);
+    var button=this;button.disabled=true;button.textContent='Guardando...';
+    try{
+      if(!currentRouteId)currentRouteId='ruta-'+(document.getElementById('route-date').value||todayValue())+'-'+Math.floor(1000+Math.random()*9000);
+      var createdAt=Date.now(),updates={},routeOrders=[];
+      previousRouteOrderIds.forEach(function(id){
+        if(!orders.some(function(order){return order.id===id;})){
+          updates['pedidos/'+id+'/rutaId']=null;updates['pedidos/'+id+'/orden']=null;updates['pedidos/'+id+'/estimadoLlegada']=null;
+        }
+      });
+      orders.forEach(function(order,index){
+        updates['pedidos/'+order.id]={
+          destino:order.destino,cliente:order.cliente,telefono:order.telefono,horarioDesde:order.horarioDesde,
+          horarioHasta:order.horarioHasta,comentarios:order.comentarios||null,creado:createdAt,estado:'pendiente',
+          rutaId:currentRouteId,orden:index+1,estimadoLlegada:order.eta,tiempoServicioMinutos:Math.round(serviceSeconds()/60)
+        };
+        routeOrders.push({pedidoId:order.id,orden:index+1,estimadoLlegada:order.eta,destino:order.destino});
+      });
+      updates['rutas/'+currentRouteId]={
+        fecha:document.getElementById('route-date').value||todayValue(),horaSalida:document.getElementById('departure-time').value||'08:00',
+        origen:origin||null,tiempoServicioMinutos:Math.round(serviceSeconds()/60),pedidos:routeOrders,actualizada:createdAt
+      };
+      await db.ref().update(updates);previousRouteOrderIds=orders.map(function(order){return order.id;});showSavedLinks();
+      document.getElementById('route-status').textContent='Ruta guardada correctamente en Firebase.';
+    }catch(error){alert('No se pudo guardar la ruta: '+error.message);}
+    finally{button.disabled=false;button.textContent='Actualizar ruta';}
+  });
+
+  function showSavedLinks(){
+    var base=window.location.href.replace(/generar-pedido\.html.*$/,'');
+    var container=document.getElementById('saved-links');container.innerHTML='';
+    orders.forEach(function(order,index){
+      var row=document.createElement('div');row.className='saved-row';
+      row.innerHTML='<b>'+(index+1)+'. '+escapeHtml(order.id)+' · '+escapeHtml(order.cliente)+'</b>'+
+        '<div class="links"><a target="_blank" rel="noopener" href="'+base+'chofer.html?id='+encodeURIComponent(order.id)+'">Abrir para chofer</a>'+
+        '<a target="_blank" rel="noopener" href="'+base+'cliente.html?id='+encodeURIComponent(order.id)+'">Abrir para cliente</a></div>';
+      container.appendChild(row);
+    });
+    document.getElementById('saved-title').textContent='Ruta guardada: '+currentRouteId;
+    document.getElementById('saved-route').style.display='block';
+  }
+
+  renderOrders();
 </script>
 </body>
 </html>
