@@ -27,10 +27,11 @@
   .section-title{font-family:var(--font-title);font-size:22px;font-weight:900;color:var(--navy-dark);margin:0 0 4px}.section-copy{font-size:12px;color:var(--grey-100);line-height:1.5;margin:0 0 20px}
   .card{background:#fff;border:1px solid var(--grey-300);border-radius:10px;padding:16px;margin-bottom:16px}.card-title{margin:0 0 13px;font-size:11px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;color:var(--navy)}
   label{display:block;font-size:10.5px;font-weight:900;text-transform:uppercase;letter-spacing:.055em;color:var(--grey-100);margin-bottom:6px}
-  input,textarea{width:100%;padding:11px 12px;border:1px solid var(--grey-200);border-radius:6px;font-family:var(--font-base);font-size:13px;color:var(--grey);background:#fff}
-  input:focus,textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(31,110,212,.1)} textarea{resize:vertical;min-height:78px}
+  input,select,textarea{width:100%;padding:11px 12px;border:1px solid var(--grey-200);border-radius:6px;font-family:var(--font-base);font-size:13px;color:var(--grey);background:#fff}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(31,110,212,.1)} textarea{resize:vertical;min-height:78px}
   .field{margin-bottom:13px}.field:last-child{margin-bottom:0}.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
   .search-row{display:flex;gap:8px}.search-row input{flex:1}.search-row button{flex:none}.status{font-size:11px;color:var(--grey-100);min-height:15px;margin-top:6px}
+  .time-caption{display:block;font-size:9.5px;font-weight:900;text-transform:uppercase;color:var(--grey-100);margin-bottom:5px}.time-selects{display:grid;grid-template-columns:1fr .72fr;gap:6px}
   .results{border:1px solid var(--grey-300);border-radius:6px;margin-top:7px;max-height:150px;overflow:auto;display:none;background:#fff}.result-item{padding:9px 10px;font-size:12px;line-height:1.35;cursor:pointer;border-bottom:1px solid var(--grey-300)}.result-item:last-child{border-bottom:0}.result-item:hover{background:#eef4fd}
   .picked{display:none;margin-top:7px;background:var(--good-bg);border:1px solid #8dd5a7;color:var(--good);border-radius:6px;padding:9px 10px;font-size:11.5px;font-weight:700;line-height:1.4}
   button{font-family:var(--font-base);cursor:pointer}.primary{border:0;border-radius:5px;background:var(--blue);color:#fff;padding:12px 16px;font-size:11.5px;font-weight:900;letter-spacing:.06em;text-transform:uppercase}.primary:hover{background:var(--blue-dark)}.primary:disabled{opacity:.5;cursor:not-allowed}
@@ -67,12 +68,12 @@
         <h2 class="card-title">Configuración de la jornada</h2>
         <div class="grid-3">
           <div class="field"><label for="route-date">Fecha</label><input type="date" id="route-date"></div>
-          <div class="field"><label for="departure-time">Hora de salida</label><input type="time" id="departure-time" value="08:00"></div>
-          <div class="field"><label for="service-minutes">Min. por entrega</label><input type="number" id="service-minutes" min="1" max="120" value="10"></div>
+          <div class="field"><label for="departure-time">Hora de salida</label><input type="time" id="departure-time" value="10:00"></div>
+          <div class="field"><label for="service-minutes">Min. por entrega</label><input type="number" id="service-minutes" min="1" max="120" value="15"></div>
         </div>
         <div class="field">
           <label for="origin-address">Dirección de salida (opcional)</label>
-          <div class="search-row"><input type="text" id="origin-address" placeholder="Depósito o punto de partida"><button class="secondary" type="button" id="btn-search-origin">Buscar</button></div>
+          <div class="search-row"><input type="text" id="origin-address" value="Av. Hipólito Yrigoyen 1815, B1618 El Talar, Provincia de Buenos Aires" placeholder="Depósito o punto de partida"><button class="secondary" type="button" id="btn-search-origin">Buscar</button></div>
           <div class="status" id="origin-status"></div><div class="results" id="origin-results"></div><div class="picked" id="origin-picked"></div>
         </div>
       </div>
@@ -90,7 +91,10 @@
       <div class="field"><label for="customer-phone">Teléfono</label><input type="text" inputmode="tel" autocomplete="tel" id="customer-phone" placeholder="Ej: 11 5555-5555"></div>
       <div class="field">
         <label>Rango de horario</label>
-        <div class="grid-2"><input type="time" id="window-from" aria-label="Horario desde"><input type="time" id="window-to" aria-label="Horario hasta"></div>
+        <div class="grid-2">
+          <div><span class="time-caption">Desde</span><div class="time-selects"><select id="window-from-hour" aria-label="Hora desde"></select><select id="window-from-minute" aria-label="Minutos desde"><option>00</option><option>15</option><option>30</option><option>45</option></select></div></div>
+          <div><span class="time-caption">Hasta</span><div class="time-selects"><select id="window-to-hour" aria-label="Hora hasta"></select><select id="window-to-minute" aria-label="Minutos hasta"><option>00</option><option>15</option><option>30</option><option>45</option></select></div></div>
+        </div>
       </div>
       <div class="field"><label for="comments">Comentarios</label><textarea id="comments" placeholder="Descripción del lugar, piso, número de departamento o indicaciones de entrega"></textarea></div>
       <button class="primary full" type="button" id="btn-add-order">Agregar pedido a la ruta</button>
@@ -99,7 +103,7 @@
 
     <section class="route-column">
       <h2 class="section-title">Ruta del día</h2>
-      <p class="section-copy">El tiempo estimado incluye viaje, espera por ventana horaria y <b id="service-copy">10 minutos</b> de servicio en cada parada.</p>
+      <p class="section-copy">El tiempo estimado incluye viaje, espera por ventana horaria y <b id="service-copy">15 minutos</b> de servicio en cada parada.</p>
       <div class="route-toolbar">
         <button class="primary" type="button" id="btn-optimize">Optimizar ruta</button>
         <button class="secondary" type="button" id="btn-recalculate">Recalcular horarios</button>
@@ -139,9 +143,10 @@
   if (configured) { firebase.initializeApp(firebaseConfig); db = firebase.database(); }
   else { document.getElementById('config-warning').style.display = 'block'; }
 
+  var DEFAULT_ORIGIN = {lat:-34.4675,lng:-58.6473,direccion:'Av. Hipólito Yrigoyen 1815, B1618 El Talar, Provincia de Buenos Aires'};
   var orders = [];
   var selectedDestination = null;
-  var origin = null;
+  var origin = Object.assign({},DEFAULT_ORIGIN);
   var editIndex = null;
   var currentRouteId = null;
   var previousRouteOrderIds = [];
@@ -158,6 +163,26 @@
   }
   document.getElementById('route-date').value = todayValue();
 
+  function populateHourSelect(id){
+    var select=document.getElementById(id),empty=document.createElement('option');
+    empty.value='';empty.textContent='--';select.appendChild(empty);
+    for(var hour=0;hour<24;hour++){
+      var option=document.createElement('option'),value=String(hour).padStart(2,'0');
+      option.value=value;option.textContent=value;select.appendChild(option);
+    }
+  }
+  populateHourSelect('window-from-hour');populateHourSelect('window-to-hour');
+
+  function readQuarterTime(prefix){
+    var hour=document.getElementById(prefix+'-hour').value;
+    return hour?hour+':'+document.getElementById(prefix+'-minute').value:'';
+  }
+  function setQuarterTime(prefix,value){
+    var parts=(value||'').split(':');
+    document.getElementById(prefix+'-hour').value=parts[0]||'';
+    document.getElementById(prefix+'-minute').value=parts[1]||'00';
+  }
+
   function newOrderId(){ return 'pedido-' + Math.floor(1000 + Math.random() * 9000); }
   document.getElementById('order-id').value = newOrderId();
 
@@ -173,6 +198,17 @@
     if (!response.ok) throw new Error('No se pudo consultar la dirección.');
     return response.json();
   }
+
+  async function initializeDefaultOrigin(){
+    var picked=document.getElementById('origin-picked');
+    picked.textContent='Salida predeterminada: '+DEFAULT_ORIGIN.direccion;picked.style.display='block';
+    try{
+      var results=await geocode(DEFAULT_ORIGIN.direccion);
+      if(results.length)origin={lat:parseFloat(results[0].lat),lng:parseFloat(results[0].lon),direccion:DEFAULT_ORIGIN.direccion};
+    }catch(error){ /* usa las coordenadas de respaldo */ }
+    renderMap();
+  }
+  initializeDefaultOrigin();
 
   function showResults(containerId, results, onPick){
     var box = document.getElementById(containerId);
@@ -238,8 +274,8 @@
       id:document.getElementById('order-id').value.trim(),
       cliente:document.getElementById('customer-name').value.trim(),
       telefono:document.getElementById('customer-phone').value.trim(),
-      horarioDesde:document.getElementById('window-from').value,
-      horarioHasta:document.getElementById('window-to').value,
+      horarioDesde:readQuarterTime('window-from'),
+      horarioHasta:readQuarterTime('window-to'),
       comentarios:document.getElementById('comments').value.trim(),
       destino:selectedDestination
     };
@@ -258,7 +294,8 @@
   }
 
   function clearOrderForm(){
-    ['customer-name','customer-phone','window-from','window-to','comments','address'].forEach(function(id){ document.getElementById(id).value = ''; });
+    ['customer-name','customer-phone','comments','address'].forEach(function(id){ document.getElementById(id).value = ''; });
+    setQuarterTime('window-from','');setQuarterTime('window-to','');
     document.getElementById('order-id').value = newOrderId();
     document.getElementById('address-picked').style.display = 'none';
     document.getElementById('address-results').style.display = 'none';
@@ -282,14 +319,14 @@
 
   function routeStartMs(){
     var date = document.getElementById('route-date').value || todayValue();
-    var time = document.getElementById('departure-time').value || '08:00';
+    var time = document.getElementById('departure-time').value || '10:00';
     return new Date(date + 'T' + time + ':00').getTime();
   }
   function windowMs(time){
     if (!time) return null;
     return new Date((document.getElementById('route-date').value || todayValue()) + 'T' + time + ':00').getTime();
   }
-  function serviceSeconds(){ return Math.max(60,Number(document.getElementById('service-minutes').value || 10) * 60); }
+  function serviceSeconds(){ return Math.max(60,Number(document.getElementById('service-minutes').value || 15) * 60); }
   function formatClock(ms){ return new Date(ms).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}); }
   function formatDuration(seconds){
     var minutes = Math.max(0,Math.round(seconds/60));
@@ -413,8 +450,8 @@
     if(action==='edit'){
       var order=orders[index];editIndex=index;selectedDestination=order.destino;
       document.getElementById('order-id').value=order.id;document.getElementById('customer-name').value=order.cliente;
-      document.getElementById('customer-phone').value=order.telefono;document.getElementById('window-from').value=order.horarioDesde;
-      document.getElementById('window-to').value=order.horarioHasta;document.getElementById('comments').value=order.comentarios||'';
+      document.getElementById('customer-phone').value=order.telefono;setQuarterTime('window-from',order.horarioDesde);
+      setQuarterTime('window-to',order.horarioHasta);document.getElementById('comments').value=order.comentarios||'';
       document.getElementById('address').value=order.destino.direccion;
       var picked=document.getElementById('address-picked');picked.textContent='Dirección seleccionada: '+order.destino.direccion;picked.style.display='block';
       document.getElementById('edit-note').style.display='block';document.getElementById('btn-cancel-edit').style.display='block';
@@ -483,8 +520,8 @@
       }));
       orders=loaded;currentRouteId=selectedId;previousRouteOrderIds=loaded.map(function(order){return order.id;});
       origin=selectedRoute.origen||null;
-      document.getElementById('departure-time').value=selectedRoute.horaSalida||'08:00';
-      document.getElementById('service-minutes').value=selectedRoute.tiempoServicioMinutos||10;
+      document.getElementById('departure-time').value=selectedRoute.horaSalida||'10:00';
+      document.getElementById('service-minutes').value=selectedRoute.tiempoServicioMinutos||15;
       if(origin){
         document.getElementById('origin-address').value=origin.direccion||'';
         var picked=document.getElementById('origin-picked');picked.textContent='Salida: '+(origin.direccion||'Punto guardado');picked.style.display='block';
@@ -521,7 +558,7 @@
         routeOrders.push({pedidoId:order.id,orden:index+1,estimadoLlegada:order.eta,destino:order.destino});
       });
       updates['rutas/'+currentRouteId]={
-        fecha:document.getElementById('route-date').value||todayValue(),horaSalida:document.getElementById('departure-time').value||'08:00',
+        fecha:document.getElementById('route-date').value||todayValue(),horaSalida:document.getElementById('departure-time').value||'10:00',
         origen:origin||null,tiempoServicioMinutos:Math.round(serviceSeconds()/60),pedidos:routeOrders,actualizada:createdAt
       };
       await db.ref().update(updates);previousRouteOrderIds=orders.map(function(order){return order.id;});showSavedLinks();
