@@ -45,18 +45,39 @@
   .sig-actions{ margin-top:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
   button.ghost{ font-family:var(--font-base); font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; padding:8px 14px; border-radius:4px; border:1px solid var(--grey-100); background:transparent; color:var(--grey); cursor:pointer; }
   .delivered-badge{ display:inline-flex; align-items:center; gap:8px; padding:9px 14px; border-radius:6px; background:#e9f9ef; border:1px solid #3ddc84; color:#1a7a41; font-weight:700; font-size:12px; margin-top:10px; }
+  .app.route-mode{max-width:1020px;}
+  .driver-route{display:none;background:var(--grey-500);padding:22px;}
+  .route-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px;}
+  .route-heading h1{font-family:var(--font-title);font-size:24px;color:var(--navy-dark);margin:0 0 4px;}
+  .route-heading p{font-size:12px;color:var(--grey-100);margin:0;}
+  .route-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+  .route-summary .stat{background:#fff;}
+  #driver-route-map{height:330px;border:1px solid var(--grey-300);border-radius:10px;margin-bottom:14px;}
+  .route-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+  .route-toolbar button{flex:1;min-width:150px;padding:11px 14px;border-radius:5px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;cursor:pointer;}
+  .route-toolbar .route-primary{border:0;background:var(--blue);color:#fff;}.route-toolbar .route-secondary{border:1px solid var(--grey-300);background:#fff;color:var(--navy);}
+  .route-toolbar button:disabled{opacity:.55;cursor:not-allowed;}
+  .driver-route-status{font-size:12px;color:var(--grey-100);min-height:18px;margin-bottom:10px;}
+  .driver-stops{display:flex;flex-direction:column;gap:10px;}
+  .driver-card{display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:12px;background:#fff;border:1px solid var(--grey-300);border-radius:10px;padding:14px;}
+  .driver-number{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:var(--navy);color:#fff;font-family:var(--font-title);font-size:18px;font-weight:900;}
+  .driver-card h2{font-size:15px;color:var(--navy-dark);margin:0 0 4px;}.driver-address{font-size:12px;line-height:1.4;color:var(--grey-100);}
+  .driver-details{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px;}.driver-tag{font-size:10px;font-weight:700;color:var(--navy);background:#eef3fb;border-radius:999px;padding:5px 8px;}.driver-tag.eta{background:#e9f9ef;color:#1a7a41;}.driver-comments{font-size:11.5px;color:var(--grey);margin-top:9px;padding:8px 10px;background:var(--grey-500);border-radius:6px;}
+  .driver-card-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;align-content:start;}.route-icon{width:34px;height:32px;border:1px solid var(--grey-300);border-radius:5px;background:#fff;color:var(--navy);font-weight:900;cursor:pointer;}.route-link{grid-column:1/-1;text-align:center;text-decoration:none;border-radius:5px;background:var(--blue);color:#fff;padding:8px;font-size:10px;font-weight:900;text-transform:uppercase;}.nav-link{grid-column:1/-1;text-align:center;text-decoration:none;border:1px solid var(--grey-300);border-radius:5px;color:var(--navy);padding:7px;font-size:10px;font-weight:900;text-transform:uppercase;}
+  .route-marker{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:var(--navy);border:2px solid #fff;color:#fff;box-shadow:0 2px 6px rgba(3,19,67,.3);font:900 13px var(--font-base);}.route-marker.origin{background:var(--red);}
   @media (max-width:480px){
     body{ padding:0; }
     .app{ border-radius:0; min-height:100vh; }
     .brand-wordmark{ width:126px; }
     .role-pill{ display:none; }
     .topbar{ padding:10px 14px; }
+    .driver-route{padding:16px;}.route-heading{display:block}.route-summary{grid-template-columns:1fr 1fr}.route-summary .stat:last-child{grid-column:1/-1}.driver-card{grid-template-columns:36px minmax(0,1fr)}.driver-card-actions{grid-column:2;display:flex;flex-wrap:wrap}.route-link,.nav-link{grid-column:auto;flex:1;min-width:120px}.route-toolbar button{min-width:125px}#driver-route-map{height:280px;}
   }
 </style>
 </head>
 <body>
 
-<div class="app">
+<div class="app" id="app">
   <div class="config-warning" id="config-warning">Falta configurar Firebase: reemplazá TODO_FIREBASE_CONFIG en el código.</div>
   <div class="topbar">
     <div class="brand">
@@ -68,6 +89,24 @@
     <span class="order-id" id="order-id-label">pedido: —</span>
   </div>
 
+  <section class="driver-route" id="route-app">
+    <div class="route-heading"><div><h1>Ruta del día</h1><p id="driver-route-copy">Cargando paradas y horarios...</p></div></div>
+    <div class="route-toolbar">
+      <button type="button" class="route-primary" id="driver-optimize">Optimizar ruta</button>
+      <button type="button" class="route-secondary" id="driver-recalculate">Recalcular horarios</button>
+      <button type="button" class="route-secondary" id="driver-save">Guardar cambios</button>
+    </div>
+    <div class="route-summary">
+      <div class="stat"><p class="stat-label">Paradas</p><p class="stat-value small" id="driver-count">—</p></div>
+      <div class="stat"><p class="stat-label">Distancia total</p><p class="stat-value small" id="driver-distance">—</p></div>
+      <div class="stat"><p class="stat-label">Fin estimado</p><p class="stat-value small" id="driver-finish">—</p></div>
+    </div>
+    <div id="driver-route-map"></div>
+    <div class="driver-route-status" id="driver-route-status"></div>
+    <div class="driver-stops" id="driver-stops"></div>
+  </section>
+
+  <div id="order-app">
   <div id="map" class="map"></div>
 
   <div class="panel">
@@ -92,6 +131,7 @@
       <span class="status-line" id="delivery-status"></span>
     </div>
   </div>
+  </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -111,8 +151,17 @@
   var configured = firebaseConfig !== "TODO_FIREBASE_CONFIG";
   if (!configured) document.getElementById('config-warning').style.display = 'block';
 
-  var orderId = new URLSearchParams(window.location.search).get('id') || 'demo';
-  document.getElementById('order-id-label').textContent = 'pedido: ' + orderId;
+  var params = new URLSearchParams(window.location.search);
+  var routeId = params.get('ruta');
+  var orderId = params.get('id') || (routeId ? null : 'demo');
+  if (routeId){
+    document.getElementById('app').classList.add('route-mode');
+    document.getElementById('route-app').style.display = 'block';
+    document.getElementById('order-app').style.display = 'none';
+    document.getElementById('order-id-label').textContent = 'ruta: ' + routeId;
+  } else {
+    document.getElementById('order-id-label').textContent = 'pedido: ' + orderId;
+  }
 
   var db = null;
   if (configured) { firebase.initializeApp(firebaseConfig); db = firebase.database(); document.getElementById('conn-dot').classList.add('on'); }
@@ -127,7 +176,7 @@
   var destino = null;
   var lastRouteFetch = 0;
 
-  if (configured){
+  if (configured && !routeId){
     db.ref('pedidos/' + orderId + '/destino').once('value', function(snap){
       destino = snap.val();
       if (destino){
@@ -222,6 +271,190 @@
     db.ref('pedidos/' + orderId + '/estado').set('entregado');
     document.getElementById('delivery-status').innerHTML = '<b style="color:#1a7a41">Entrega confirmada.</b>';
   });
+
+  var driverRoute = null, driverOrders = [], driverMap = null, driverMarkers = null, driverRouteLine = null;
+
+  function driverEscape(value){
+    return String(value == null ? '' : value).replace(/[&<>"']/g,function(char){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char];
+    });
+  }
+  function driverServiceSeconds(){ return Math.max(60,Number(driverRoute.tiempoServicioMinutos||10)*60); }
+  function driverStartMs(){ return new Date(driverRoute.fecha+'T'+(driverRoute.horaSalida||'08:00')+':00').getTime(); }
+  function driverWindowMs(time){ return time ? new Date(driverRoute.fecha+'T'+time+':00').getTime() : null; }
+  function driverClock(ms){ return new Date(ms).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}); }
+  function driverDuration(seconds){
+    var minutes=Math.max(0,Math.round(seconds/60));
+    return minutes<60?minutes+' min':Math.floor(minutes/60)+' h '+(minutes%60)+' min';
+  }
+  function driverHaversine(a,b){
+    var radius=6371,toRad=Math.PI/180,dLat=(b.lat-a.lat)*toRad,dLng=(b.lng-a.lng)*toRad;
+    var value=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(a.lat*toRad)*Math.cos(b.lat*toRad)*Math.sin(dLng/2)*Math.sin(dLng/2);
+    return radius*2*Math.atan2(Math.sqrt(value),Math.sqrt(1-value));
+  }
+  async function driverMatrix(points){
+    if(points.length<2)return {durations:[[0]],distances:[[0]]};
+    try{
+      var coords=points.map(function(point){return point.lng+','+point.lat;}).join(';');
+      var response=await fetch('https://router.project-osrm.org/table/v1/driving/'+coords+'?annotations=duration,distance');
+      var data=await response.json();
+      if(data.code!=='Ok')throw new Error('OSRM');
+      return data;
+    }catch(error){
+      var durations=[],distances=[];
+      points.forEach(function(from,i){
+        durations[i]=[];distances[i]=[];
+        points.forEach(function(to,j){
+          var km=i===j?0:driverHaversine(from,to)*1.25;
+          distances[i][j]=km*1000;durations[i][j]=km/28*3600;
+        });
+      });
+      document.getElementById('driver-route-status').textContent='Se usó una estimación aproximada porque el servicio de rutas no respondió.';
+      return {durations:durations,distances:distances};
+    }
+  }
+  function driverOptimizedOrder(matrix,hasOrigin){
+    if(driverOrders.length<2)return driverOrders.slice();
+    var remaining=driverOrders.map(function(order,index){return {order:order,matrixIndex:index+(hasOrigin?1:0)};});
+    var result=[],currentIndex,currentTime=driverStartMs();
+    if(hasOrigin)currentIndex=0;
+    else{
+      var first=remaining.shift();result.push(first.order);currentIndex=first.matrixIndex;
+      var firstWindow=driverWindowMs(first.order.horarioDesde);
+      if(firstWindow&&currentTime<firstWindow)currentTime=firstWindow;
+      currentTime+=driverServiceSeconds()*1000;
+    }
+    while(remaining.length){
+      var best=0,bestScore=Infinity;
+      remaining.forEach(function(candidate,index){
+        var travel=(matrix.durations[currentIndex][candidate.matrixIndex]||0)*1000;
+        var arrival=currentTime+travel,start=driverWindowMs(candidate.order.horarioDesde),end=driverWindowMs(candidate.order.horarioHasta);
+        var serviceStart=start&&arrival<start?start:arrival,late=end&&serviceStart>end?serviceStart-end:0;
+        var score=serviceStart+late*20;
+        if(score<bestScore){bestScore=score;best=index;}
+      });
+      var selected=remaining.splice(best,1)[0],trip=(matrix.durations[currentIndex][selected.matrixIndex]||0)*1000;
+      var eta=currentTime+trip,windowStart=driverWindowMs(selected.order.horarioDesde);
+      if(windowStart&&eta<windowStart)eta=windowStart;
+      currentTime=eta+driverServiceSeconds()*1000;currentIndex=selected.matrixIndex;result.push(selected.order);
+    }
+    return result;
+  }
+  async function driverDrawRoute(points){
+    if(driverRouteLine){driverMap.removeLayer(driverRouteLine);driverRouteLine=null;}
+    if(points.length<2)return;
+    try{
+      var coords=points.map(function(point){return point.lng+','+point.lat;}).join(';');
+      var response=await fetch('https://router.project-osrm.org/route/v1/driving/'+coords+'?overview=full&geometries=geojson');
+      var data=await response.json();
+      if(data.code!=='Ok')return;
+      var latlngs=data.routes[0].geometry.coordinates.map(function(coord){return [coord[1],coord[0]];});
+      driverRouteLine=L.polyline(latlngs,{color:'#1F6ED4',weight:5,opacity:.8}).addTo(driverMap);
+    }catch(error){}
+  }
+  function driverRenderMap(){
+    driverMarkers.clearLayers();
+    var bounds=[];
+    if(driverRoute.origen){
+      var originIcon=L.divIcon({className:'',html:'<div class="route-marker origin">S</div>',iconSize:[30,30],iconAnchor:[15,15]});
+      L.marker([driverRoute.origen.lat,driverRoute.origen.lng],{icon:originIcon}).bindTooltip('Salida').addTo(driverMarkers);
+      bounds.push([driverRoute.origen.lat,driverRoute.origen.lng]);
+    }
+    driverOrders.forEach(function(order,index){
+      var icon=L.divIcon({className:'',html:'<div class="route-marker">'+(index+1)+'</div>',iconSize:[30,30],iconAnchor:[15,15]});
+      L.marker([order.destino.lat,order.destino.lng],{icon:icon}).bindTooltip((index+1)+'. '+order.cliente).addTo(driverMarkers);
+      bounds.push([order.destino.lat,order.destino.lng]);
+    });
+    if(bounds.length)driverMap.fitBounds(bounds,{padding:[28,28],maxZoom:14});
+  }
+  function driverRenderCards(){
+    var container=document.getElementById('driver-stops');container.innerHTML='';
+    driverOrders.forEach(function(order,index){
+      var card=document.createElement('article');card.className='driver-card';
+      var phone=order.telefono?'<a class="driver-tag" href="tel:'+driverEscape(order.telefono)+'">Tel. '+driverEscape(order.telefono)+'</a>':'';
+      var comments=order.comentarios?'<div class="driver-comments"><b>Indicaciones:</b> '+driverEscape(order.comentarios)+'</div>':'';
+      var manageUrl='chofer.html?id='+encodeURIComponent(order.id);
+      var navUrl='https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(order.destino.lat+','+order.destino.lng);
+      card.innerHTML='<div class="driver-number">'+(index+1)+'</div><div><h2>'+driverEscape(order.id)+' · '+driverEscape(order.cliente)+'</h2>'+
+        '<div class="driver-address">'+driverEscape(order.destino.direccion)+'</div><div class="driver-details"><span class="driver-tag eta">ETA '+driverClock(order.eta)+'</span>'+
+        '<span class="driver-tag">'+driverEscape(order.horarioDesde)+'–'+driverEscape(order.horarioHasta)+'</span>'+phone+'<span class="driver-tag">'+driverDuration(driverServiceSeconds())+' de entrega</span></div>'+comments+'</div>'+
+        '<div class="driver-card-actions"><button type="button" class="route-icon" data-action="up" title="Mover antes">↑</button><button type="button" class="route-icon" data-action="down" title="Mover después">↓</button>'+
+        '<a class="nav-link" target="_blank" rel="noopener" href="'+navUrl+'">Navegar</a><a class="route-link" target="_blank" rel="noopener" href="'+manageUrl+'">Gestionar entrega</a></div>';
+      card.querySelectorAll('[data-action]').forEach(function(button){
+        button.addEventListener('click',function(){driverMove(index,button.getAttribute('data-action'));});
+      });
+      container.appendChild(card);
+    });
+    document.getElementById('driver-count').textContent=driverOrders.length;
+  }
+  async function driverCalculate(optimize){
+    if(!driverOrders.length)return;
+    document.getElementById('driver-route-status').textContent='Calculando recorrido...';
+    var points=(driverRoute.origen?[driverRoute.origen]:[]).concat(driverOrders.map(function(order){return order.destino;}));
+    var matrix=await driverMatrix(points);
+    if(optimize){
+      driverOrders=driverOptimizedOrder(matrix,!!driverRoute.origen);
+      points=(driverRoute.origen?[driverRoute.origen]:[]).concat(driverOrders.map(function(order){return order.destino;}));
+      matrix=await driverMatrix(points);
+    }
+    var now=driverStartMs(),totalDistance=0;
+    driverOrders.forEach(function(order,index){
+      var toIndex=index+(driverRoute.origen?1:0),travel=0,distance=0;
+      if(driverRoute.origen||index>0){
+        var fromIndex=driverRoute.origen?toIndex-1:index-1;
+        travel=matrix.durations[fromIndex][toIndex]||0;distance=matrix.distances[fromIndex][toIndex]||0;
+      }
+      var rawArrival=now+travel*1000,start=driverWindowMs(order.horarioDesde);
+      order.eta=start&&rawArrival<start?start:rawArrival;order.distanceMeters=distance;order.travelSeconds=travel;
+      now=order.eta+driverServiceSeconds()*1000;totalDistance+=distance;
+    });
+    document.getElementById('driver-distance').textContent=(totalDistance/1000).toFixed(1)+' km';
+    document.getElementById('driver-finish').textContent=driverClock(now);
+    document.getElementById('driver-route-status').textContent=optimize?'Ruta optimizada. Podés modificarla con las flechas y guardar.':'Horarios recalculados.';
+    driverRenderCards();driverRenderMap();await driverDrawRoute(points);
+  }
+  async function driverMove(index,action){
+    if(action==='up'&&index>0){var item=driverOrders.splice(index,1)[0];driverOrders.splice(index-1,0,item);}
+    if(action==='down'&&index<driverOrders.length-1){var moved=driverOrders.splice(index,1)[0];driverOrders.splice(index+1,0,moved);}
+    await driverCalculate(false);
+  }
+  async function driverLoadRoute(){
+    if(!configured){document.getElementById('driver-route-status').textContent='Falta configurar Firebase.';return;}
+    try{
+      var snapshot=await db.ref('rutas/'+routeId).once('value');
+      driverRoute=snapshot.val();
+      if(!driverRoute)throw new Error('La ruta no existe o fue eliminada.');
+      var stops=Array.isArray(driverRoute.pedidos)?driverRoute.pedidos:Object.values(driverRoute.pedidos||{});
+      stops.sort(function(a,b){return (a.orden||0)-(b.orden||0);});
+      driverOrders=await Promise.all(stops.map(async function(stop){
+        var orderSnapshot=await db.ref('pedidos/'+stop.pedidoId).once('value'),value=orderSnapshot.val()||{};
+        return {id:stop.pedidoId,cliente:value.cliente||'',telefono:value.telefono||'',horarioDesde:value.horarioDesde||'',horarioHasta:value.horarioHasta||'',comentarios:value.comentarios||'',destino:value.destino||stop.destino,estado:value.estado||'pendiente'};
+      }));
+      document.getElementById('driver-route-copy').textContent=(driverRoute.fecha||'')+' · salida '+(driverRoute.horaSalida||'08:00')+' · '+(driverRoute.tiempoServicioMinutos||10)+' min por entrega';
+      driverMap=L.map('driver-route-map',{attributionControl:false}).setView([-34.6037,-58.3816],11);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(driverMap);
+      driverMarkers=L.layerGroup().addTo(driverMap);
+      await driverCalculate(false);
+    }catch(error){document.getElementById('driver-route-status').textContent=error.message;}
+  }
+  document.getElementById('driver-optimize').addEventListener('click',function(){driverCalculate(true);});
+  document.getElementById('driver-recalculate').addEventListener('click',function(){driverCalculate(false);});
+  document.getElementById('driver-save').addEventListener('click',async function(){
+    if(!driverRoute||!driverOrders.length)return;
+    var button=this;button.disabled=true;button.textContent='Guardando...';
+    try{
+      var updates={},routeStops=[];
+      driverOrders.forEach(function(order,index){
+        routeStops.push({pedidoId:order.id,orden:index+1,estimadoLlegada:order.eta,destino:order.destino});
+        updates['pedidos/'+order.id+'/orden']=index+1;updates['pedidos/'+order.id+'/estimadoLlegada']=order.eta;
+      });
+      updates['rutas/'+routeId+'/pedidos']=routeStops;updates['rutas/'+routeId+'/actualizada']=Date.now();
+      await db.ref().update(updates);
+      document.getElementById('driver-route-status').textContent='Cambios guardados. Esta es ahora la ruta activa del día.';
+    }catch(error){document.getElementById('driver-route-status').textContent='No se pudo guardar: '+error.message;}
+    finally{button.disabled=false;button.textContent='Guardar cambios';}
+  });
+  if(routeId)driverLoadRoute();
 </script>
 </body>
 </html>
