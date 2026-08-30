@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ganadera Panamericana · Chofer</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@700;900&family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#061c5d; --navy-dark:#031343; --red:#e34b00; --white:#ffffff;
+    --body-bg:#f7f7f9; --grey:#444444; --grey-100:#929292; --grey-300:#dbdbdb; --grey-500:#f5f5f5;
+    --font-base:'Lato', sans-serif; --font-title:'Frank Ruhl Libre', serif;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; background:var(--body-bg); color:var(--grey); font-family:var(--font-base); padding:20px; }
+  .app{ max-width:560px; margin:0 auto; border-radius:14px; overflow:hidden; background:var(--white); box-shadow:0 4px 18px rgba(3,19,67,.12); }
+  .topbar{ background:var(--navy-dark); color:#fff; display:flex; align-items:center; justify-content:space-between; padding:14px 20px; }
+  .brand{ display:flex; align-items:center; gap:10px; }
+  .brand-dot{ width:9px;height:9px;border-radius:50%; background:var(--grey-300); }
+  .brand-dot.on{ background:#3ddc84; box-shadow:0 0 0 3px rgba(61,220,132,0.2); }
+  .brand-text{ font-family:var(--font-title); font-weight:900; font-size:14px; text-transform:uppercase; }
+  .order-id{ font-size:11px; color:rgba(255,255,255,.7); }
+  .map{ height:280px; width:100%; }
+  .panel{ padding:20px 22px; }
+  .row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .stat{ flex:1; min-width:120px; background:var(--grey-500); border:1px solid var(--grey-300); border-radius:8px; padding:10px 12px; }
+  .stat-label{ font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--grey-100); font-weight:700; margin:0 0 4px; }
+  .stat-value{ font-family:var(--font-title); font-weight:900; font-size:18px; color:var(--navy-dark); margin:0; }
+  .stat-value.small{ font-size:14px; }
+  .actions{ margin-top:16px; }
+  button.primary{ width:100%; font-family:var(--font-base); font-size:13px; font-weight:900; text-transform:uppercase; letter-spacing:1px; padding:14px 20px; border-radius:4px; border:none; background:var(--red); color:#fff; cursor:pointer; }
+  button.primary.stop{ background:var(--navy-dark); }
+  .status-line{ display:block; margin-top:10px; font-size:12px; color:var(--grey-100); }
+  .status-line b{ color:var(--navy-dark); font-weight:700; }
+  .hint{ margin-top:14px; font-size:11.5px; line-height:1.6; color:var(--grey-100); }
+  .config-warning{ padding:12px 20px; background:#fdece2; font-size:12px; color:var(--red); font-weight:700; display:none; }
+  .delivery-box{ margin-top:18px; border:1px solid var(--grey-300); border-radius:8px; padding:14px; background:var(--grey-500); }
+  .delivery-box p.title{ margin:0 0 10px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--navy-dark); }
+  canvas#sig{ width:100%; height:110px; background:#fff; border:1px dashed var(--grey-100); border-radius:6px; touch-action:none; display:block; }
+  .sig-actions{ margin-top:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  button.ghost{ font-family:var(--font-base); font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; padding:8px 14px; border-radius:4px; border:1px solid var(--grey-100); background:transparent; color:var(--grey); cursor:pointer; }
+  .delivered-badge{ display:inline-flex; align-items:center; gap:8px; padding:9px 14px; border-radius:6px; background:#e9f9ef; border:1px solid #3ddc84; color:#1a7a41; font-weight:700; font-size:12px; margin-top:10px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="config-warning" id="config-warning">Falta configurar Firebase: reemplazá TODO_FIREBASE_CONFIG en el código.</div>
+  <div class="topbar">
+    <div class="brand"><div class="brand-dot" id="conn-dot"></div><span class="brand-text">Chofer</span></div>
+    <span class="order-id" id="order-id-label">pedido: —</span>
+  </div>
+
+  <div id="map" class="map"></div>
+
+  <div class="panel">
+    <div class="row">
+      <div class="stat"><p class="stat-label">Estado</p><p class="stat-value small" id="rep-estado">Detenido</p></div>
+      <div class="stat"><p class="stat-label">Distancia al destino</p><p class="stat-value small" id="rep-dist">—</p></div>
+      <div class="stat"><p class="stat-label">Llegada estimada</p><p class="stat-value small" id="rep-eta">—</p></div>
+    </div>
+    <div class="actions">
+      <button class="primary" id="btn-toggle">Compartir mi ubicación</button>
+      <span class="status-line" id="rep-status">Tocá el botón y aceptá el permiso de ubicación.</span>
+    </div>
+    <p class="hint" id="destino-hint">Destino: —</p>
+
+    <div class="delivery-box" id="delivery-box">
+      <p class="title">Confirmación de entrega</p>
+      <canvas id="sig" width="600" height="110"></canvas>
+      <div class="sig-actions">
+        <button class="ghost" id="btn-clear-sig">Borrar firma</button>
+        <button class="primary" id="btn-confirm-delivery" style="width:auto;">Confirmar entrega</button>
+      </div>
+      <span class="status-line" id="delivery-status"></span>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+  var firebaseConfig = {
+    apiKey: "AIzaSyCbI1PcP5f1jeqZSQRsNME2uEk_IK0yWqQ",
+    authDomain: "ganadera-envios.firebaseapp.com",
+    databaseURL: "https://ganadera-envios-default-rtdb.firebaseio.com",
+    projectId: "ganadera-envios",
+    storageBucket: "ganadera-envios.firebasestorage.app",
+    messagingSenderId: "876135437382",
+    appId: "1:876135437382:web:bbc0d1b874fef3f1ca6647",
+    measurementId: "G-WBBF6N5TM2"
+  };
+  var configured = firebaseConfig !== "TODO_FIREBASE_CONFIG";
+  if (!configured) document.getElementById('config-warning').style.display = 'block';
+
+  var orderId = new URLSearchParams(window.location.search).get('id') || 'demo';
+  document.getElementById('order-id-label').textContent = 'pedido: ' + orderId;
+
+  var db = null;
+  if (configured) { firebase.initializeApp(firebaseConfig); db = firebase.database(); document.getElementById('conn-dot').classList.add('on'); }
+
+  var map = L.map('map', {zoomControl:true, attributionControl:false}).setView([-34.6037,-58.3816], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19}).addTo(map);
+
+  var vanIcon = L.divIcon({ className:'', html:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="1" y="1" width="22" height="22" rx="6" fill="#e34b00"/><path d="M6 15.5V9.5C6 8.4 6.9 7.5 8 7.5H13.5V15.5" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/><path d="M13.5 10.5H16.3L18.5 12.7V15.5H13.5" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/><circle cx="9" cy="16" r="1.4" fill="#fff"/><circle cx="16" cy="16" r="1.4" fill="#fff"/></svg>', iconSize:[26,26] });
+  var pinIcon = L.divIcon({ className:'', html:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 22s7-7.4 7-12.5A7 7 0 1 0 5 9.5C5 14.6 12 22 12 22Z" fill="#061c5d"/><circle cx="12" cy="9.5" r="2.6" fill="#fff"/></svg>', iconSize:[24,24], iconAnchor:[12,22] });
+
+  var myMarker = null, destMarker = null, routeLine = null;
+  var destino = null;
+  var lastRouteFetch = 0;
+
+  if (configured){
+    db.ref('pedidos/' + orderId + '/destino').once('value', function(snap){
+      destino = snap.val();
+      if (destino){
+        destMarker = L.marker([destino.lat, destino.lng], {icon: pinIcon}).addTo(map);
+        document.getElementById('destino-hint').textContent = 'Destino: ' + destino.direccion;
+        map.setView([destino.lat, destino.lng], 13);
+      } else {
+        document.getElementById('destino-hint').textContent = 'Este pedido no tiene destino cargado.';
+      }
+    });
+  }
+
+  async function updateRoute(from){
+    if (!destino) return;
+    var now = Date.now();
+    if (now - lastRouteFetch < 8000) return;
+    lastRouteFetch = now;
+    try {
+      var url = 'https://router.project-osrm.org/route/v1/driving/' + from[1] + ',' + from[0] + ';' + destino.lng + ',' + destino.lat + '?overview=full&geometries=geojson';
+      var res = await fetch(url);
+      var data = await res.json();
+      if (data.code !== 'Ok') return;
+      var route = data.routes[0];
+      var km = (route.distance / 1000).toFixed(1);
+      var min = Math.max(1, Math.round(route.duration / 60));
+      document.getElementById('rep-dist').textContent = km + ' km';
+      document.getElementById('rep-eta').textContent = min + ' min';
+      var coords = route.geometry.coordinates.map(function(c){ return [c[1], c[0]]; });
+      if (routeLine) map.removeLayer(routeLine);
+      routeLine = L.polyline(coords, {color:'#e34b00', weight:4, opacity:0.75}).addTo(map);
+    } catch(e){ /* silencioso: sigue mostrando el último valor conocido */ }
+  }
+
+  var watchId = null, sharing = false;
+
+  function toggleShare(){
+    if (!configured){ document.getElementById('rep-status').innerHTML = '<span style="color:var(--red)">Configurá Firebase primero.</span>'; return; }
+    if (sharing){
+      navigator.geolocation.clearWatch(watchId);
+      sharing = false;
+      document.getElementById('btn-toggle').textContent = 'Compartir mi ubicación';
+      document.getElementById('btn-toggle').classList.remove('stop');
+      document.getElementById('rep-estado').textContent = 'Detenido';
+      document.getElementById('rep-status').textContent = 'Envío pausado.';
+      return;
+    }
+    if (!navigator.geolocation){ document.getElementById('rep-status').innerHTML = '<span style="color:var(--red)">Este navegador no soporta geolocalización.</span>'; return; }
+    sharing = true;
+    document.getElementById('btn-toggle').textContent = 'Detener envío';
+    document.getElementById('btn-toggle').classList.add('stop');
+    document.getElementById('rep-estado').textContent = 'Compartiendo';
+    document.getElementById('rep-status').innerHTML = 'Transmitiendo posición <b>en vivo</b>.';
+
+    watchId = navigator.geolocation.watchPosition(function(pos){
+      var lat = pos.coords.latitude, lng = pos.coords.longitude;
+      db.ref('pedidos/' + orderId + '/posicion').set({ lat:lat, lng:lng, updatedAt: Date.now() });
+      if (!myMarker) { myMarker = L.marker([lat,lng], {icon: vanIcon}).addTo(map); }
+      else { myMarker.setLatLng([lat,lng]); }
+      map.panTo([lat,lng]);
+      updateRoute([lat,lng]);
+    }, function(err){
+      document.getElementById('rep-status').innerHTML = '<span style="color:var(--red)">Error de GPS: ' + err.message + '</span>';
+    }, { enableHighAccuracy:true, maximumAge:5000, timeout:10000 });
+  }
+  document.getElementById('btn-toggle').addEventListener('click', toggleShare);
+
+  // firma
+  var canvas = document.getElementById('sig');
+  var ctx = canvas.getContext('2d');
+  ctx.strokeStyle = '#061c5d'; ctx.lineWidth = 2.5; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  var drawing = false, hasSignature = false;
+  function pos(e){
+    var rect = canvas.getBoundingClientRect();
+    var sx = canvas.width/rect.width, sy = canvas.height/rect.height;
+    var cx = e.touches ? e.touches[0].clientX : e.clientX;
+    var cy = e.touches ? e.touches[0].clientY : e.clientY;
+    return { x:(cx-rect.left)*sx, y:(cy-rect.top)*sy };
+  }
+  function start(e){ drawing=true; hasSignature=true; var p=pos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); e.preventDefault(); }
+  function move(e){ if(!drawing) return; var p=pos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); e.preventDefault(); }
+  function end(){ drawing=false; }
+  canvas.addEventListener('mousedown',start); canvas.addEventListener('mousemove',move); window.addEventListener('mouseup',end);
+  canvas.addEventListener('touchstart',start); canvas.addEventListener('touchmove',move); canvas.addEventListener('touchend',end);
+
+  document.getElementById('btn-clear-sig').addEventListener('click', function(){ ctx.clearRect(0,0,canvas.width,canvas.height); hasSignature=false; });
+
+  document.getElementById('btn-confirm-delivery').addEventListener('click', function(){
+    if (!configured){ document.getElementById('delivery-status').innerHTML = '<span style="color:var(--red)">Configurá Firebase primero.</span>'; return; }
+    if (!hasSignature){ document.getElementById('delivery-status').innerHTML = '<span style="color:var(--red)">Pedile al cliente que firme.</span>'; return; }
+    var dataUrl = canvas.toDataURL('image/png');
+    db.ref('pedidos/' + orderId + '/entrega').set({ confirmado:true, firma:dataUrl, hora:Date.now() });
+    db.ref('pedidos/' + orderId + '/estado').set('entregado');
+    document.getElementById('delivery-status').innerHTML = '<b style="color:#1a7a41">Entrega confirmada.</b>';
+  });
+</script>
+</body>
+</html>

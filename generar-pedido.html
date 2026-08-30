@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ganadera Panamericana · Crear pedido</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@700;900&family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#061c5d; --navy-dark:#031343; --red:#e34b00; --white:#ffffff;
+    --body-bg:#f7f7f9; --grey:#444444; --grey-100:#929292; --grey-300:#dbdbdb; --grey-500:#f5f5f5;
+    --good:#1a7a41; --good-bg:#e9f9ef;
+    --font-base:'Lato', sans-serif; --font-title:'Frank Ruhl Libre', serif;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; background:var(--body-bg); color:var(--grey); font-family:var(--font-base); padding:24px; }
+  .app{ max-width:720px; margin:0 auto; border-radius:14px; overflow:hidden; background:var(--white); box-shadow:0 4px 18px rgba(3,19,67,.12); }
+  .topbar{ background:var(--navy-dark); color:#fff; padding:18px 24px; }
+  .brand-text{ font-family:var(--font-title); font-weight:900; font-size:16px; letter-spacing:0.02em; text-transform:uppercase; }
+  .sub{ font-size:12px; color:rgba(255,255,255,.7); margin-top:4px; }
+  .panel{ padding:26px 28px; }
+  label{ display:block; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--grey-100); margin-bottom:6px; }
+  input[type=text]{ width:100%; padding:12px 14px; border:1px solid var(--grey-300); border-radius:6px; font-family:var(--font-base); font-size:14px; color:var(--grey); margin-bottom:16px; }
+  input[type=text]:focus{ outline:none; border-color:var(--navy); }
+  .row2{ display:flex; gap:12px; }
+  .row2 > div{ flex:1; }
+  button.primary{ font-family:var(--font-base); font-size:13px; font-weight:900; text-transform:uppercase; letter-spacing:1px; padding:13px 24px; border-radius:4px; border:none; background:var(--red); color:#fff; cursor:pointer; }
+  button.primary:hover{ filter:brightness(1.08); }
+  button.ghost{ font-family:var(--font-base); font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; padding:8px 14px; border-radius:4px; border:1px solid var(--grey-300); background:transparent; color:var(--grey); cursor:pointer; }
+  .results{ border:1px solid var(--grey-300); border-radius:6px; margin-bottom:16px; max-height:180px; overflow-y:auto; }
+  .result-item{ padding:10px 12px; font-size:13px; cursor:pointer; border-bottom:1px solid var(--grey-500); }
+  .result-item:last-child{ border-bottom:none; }
+  .result-item:hover{ background:var(--grey-500); }
+  .picked{ background:var(--good-bg); border:1px solid var(--good); border-radius:6px; padding:10px 12px; font-size:13px; color:var(--good); font-weight:700; margin-bottom:16px; display:none; }
+  .status{ font-size:12px; color:var(--grey-100); margin-bottom:16px; min-height:16px; }
+  .config-warning{ padding:12px 24px; background:#fdece2; font-size:12px; color:var(--red); font-weight:700; display:none; }
+  .out{ margin-top:22px; border-top:1px solid var(--grey-300); padding-top:22px; display:none; }
+  .link-box{ display:flex; gap:8px; align-items:center; background:var(--grey-500); border:1px solid var(--grey-300); border-radius:6px; padding:10px 12px; margin-bottom:12px; }
+  .link-box span{ font-family:monospace; font-size:11.5px; color:var(--grey); flex:1; overflow-x:auto; white-space:nowrap; }
+  .link-label{ font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:.05em; color:var(--navy-dark); margin-bottom:6px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="config-warning" id="config-warning">Falta configurar Firebase: reemplazá TODO_FIREBASE_CONFIG en el código.</div>
+  <div class="topbar">
+    <div class="brand-text">Ganadera Panamericana</div>
+    <div class="sub">Crear pedido para rastreo</div>
+  </div>
+  <div class="panel">
+    <label>Dirección de entrega</label>
+    <div class="row2">
+      <div><input type="text" id="direccion" placeholder="Ej: Av. Rivadavia 4500, Caballito"></div>
+    </div>
+    <button class="ghost" id="btn-buscar" style="margin-bottom:16px;">Buscar dirección</button>
+    <div class="status" id="search-status"></div>
+    <div class="results" id="results" style="display:none;"></div>
+    <div class="picked" id="picked"></div>
+
+    <label>ID del pedido</label>
+    <input type="text" id="pedido-id">
+
+    <label>Nombre del cliente (opcional, solo de referencia)</label>
+    <input type="text" id="cliente-nombre" placeholder="Ej: Juan Pérez">
+
+    <button class="primary" id="btn-crear">Crear pedido y generar links</button>
+
+    <div class="out" id="out">
+      <div class="link-label">Link para el chofer</div>
+      <div class="link-box"><span id="link-chofer"></span><button class="ghost" data-copy="link-chofer">Copiar</button></div>
+      <div class="link-label">Link para el cliente</div>
+      <div class="link-box"><span id="link-cliente"></span><button class="ghost" data-copy="link-cliente">Copiar</button></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+  var firebaseConfig = {
+    apiKey: "AIzaSyCbI1PcP5f1jeqZSQRsNME2uEk_IK0yWqQ",
+    authDomain: "ganadera-envios.firebaseapp.com",
+    databaseURL: "https://ganadera-envios-default-rtdb.firebaseio.com",
+    projectId: "ganadera-envios",
+    storageBucket: "ganadera-envios.firebasestorage.app",
+    messagingSenderId: "876135437382",
+    appId: "1:876135437382:web:bbc0d1b874fef3f1ca6647",
+    measurementId: "G-WBBF6N5TM2"
+  };
+  var configured = firebaseConfig !== "TODO_FIREBASE_CONFIG";
+  if (!configured) document.getElementById('config-warning').style.display = 'block';
+
+  var db = null;
+  if (configured) { firebase.initializeApp(firebaseConfig); db = firebase.database(); }
+
+  document.getElementById('pedido-id').value = 'pedido-' + Math.floor(1000 + Math.random() * 9000);
+
+  var destino = null;
+
+  document.getElementById('btn-buscar').addEventListener('click', async function(){
+    var q = document.getElementById('direccion').value.trim();
+    if (!q) return;
+    document.getElementById('search-status').textContent = 'Buscando...';
+    document.getElementById('results').style.display = 'none';
+    document.getElementById('picked').style.display = 'none';
+    try {
+      var url = 'https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=ar&q=' + encodeURIComponent(q);
+      var res = await fetch(url, { headers: { 'Accept-Language': 'es' } });
+      var data = await res.json();
+      document.getElementById('search-status').textContent = data.length ? '' : 'No se encontraron resultados. Probá con más detalle (ciudad, provincia).';
+      var box = document.getElementById('results');
+      box.innerHTML = '';
+      data.forEach(function(item){
+        var div = document.createElement('div');
+        div.className = 'result-item';
+        div.textContent = item.display_name;
+        div.addEventListener('click', function(){
+          destino = { lat: parseFloat(item.lat), lng: parseFloat(item.lon), direccion: item.display_name };
+          document.getElementById('picked').style.display = 'block';
+          document.getElementById('picked').textContent = '✓ ' + item.display_name;
+          box.style.display = 'none';
+        });
+        box.appendChild(div);
+      });
+      if (data.length) box.style.display = 'block';
+    } catch (e) {
+      document.getElementById('search-status').textContent = 'Error buscando la dirección.';
+    }
+  });
+
+  document.getElementById('btn-crear').addEventListener('click', async function(){
+    if (!configured){ alert('Configurá Firebase primero.'); return; }
+    if (!destino){ alert('Buscá y seleccioná la dirección de entrega primero.'); return; }
+    var id = document.getElementById('pedido-id').value.trim();
+    if (!id){ alert('Poné un ID de pedido.'); return; }
+
+    await db.ref('pedidos/' + id).set({
+      destino: destino,
+      cliente: document.getElementById('cliente-nombre').value.trim() || null,
+      creado: Date.now(),
+      estado: 'pendiente'
+    });
+
+    var base = window.location.href.replace(/generar-pedido\.html.*$/, '');
+    var chofer = base + 'chofer.html?id=' + encodeURIComponent(id);
+    var cliente = base + 'cliente.html?id=' + encodeURIComponent(id);
+    document.getElementById('link-chofer').textContent = chofer;
+    document.getElementById('link-cliente').textContent = cliente;
+    document.getElementById('out').style.display = 'block';
+  });
+
+  document.querySelectorAll('[data-copy]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var text = document.getElementById(btn.getAttribute('data-copy')).textContent;
+      navigator.clipboard.writeText(text).then(function(){
+        var old = btn.textContent; btn.textContent = 'Copiado'; setTimeout(function(){ btn.textContent = old; }, 1200);
+      });
+    });
+  });
+</script>
+</body>
+</html>
