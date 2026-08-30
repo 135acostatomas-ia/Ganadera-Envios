@@ -41,7 +41,7 @@
   #route-map{height:260px;border:1px solid var(--grey-300);border-radius:9px;margin-bottom:14px;background:#e9edf4}.empty{padding:28px 18px;text-align:center;background:#fff;border:1px dashed var(--grey-200);border-radius:9px;color:var(--grey-100);font-size:12px;line-height:1.5}
   .stop-list{display:flex;flex-direction:column;gap:9px}.stop{display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:10px;align-items:start;background:#fff;border:1px solid var(--grey-300);border-radius:9px;padding:11px}.stop-number{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:var(--navy);color:#fff;font-family:var(--font-title);font-size:16px;font-weight:900}
   .stop-title{font-size:13px;font-weight:900;color:var(--navy-dark);margin-bottom:3px}.stop-address{font-size:11.5px;line-height:1.35;color:var(--grey-100)}.stop-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}.tag{font-size:9.5px;font-weight:700;color:var(--navy);background:#eef3fb;border-radius:999px;padding:4px 7px}.tag.eta{background:var(--good-bg);color:var(--good)}.tag.late{background:#fdece2;color:#b42318}.stop-actions{display:grid;grid-template-columns:1fr 1fr;gap:5px}.icon-btn{width:30px;height:28px;border:1px solid var(--grey-200);border-radius:5px;background:#fff;color:var(--navy);font-weight:900}.icon-btn:hover{background:#eef4fd}.icon-btn.remove{color:#b42318}
-  .saved{display:none;margin-top:16px;background:var(--good-bg);border:1px solid #8dd5a7;border-radius:9px;padding:14px}.saved-title{font-size:12px;font-weight:900;color:var(--good);margin-bottom:10px}.saved-row{background:#fff;border-radius:6px;padding:9px;margin-top:7px}.saved-row b{font-size:11px;color:var(--navy-dark)}.links{display:flex;gap:8px;margin-top:6px}.links a{font-size:10.5px;color:var(--blue);font-weight:700;text-decoration:none}
+  .saved{display:none;margin-top:16px;background:var(--good-bg);border:1px solid #8dd5a7;border-radius:9px;padding:14px}.saved-title{font-size:12px;font-weight:900;color:var(--good);margin-bottom:10px}.saved-row{background:#fff;border-radius:6px;padding:9px;margin-top:7px}.saved-row b{font-size:11px;color:var(--navy-dark)}.links{display:flex;gap:8px;margin-top:6px}.links a{font-size:10.5px;color:var(--blue);font-weight:700;text-decoration:none}.driver-link{border:1px solid #8dd5a7;padding:12px}.driver-link .links{align-items:center;flex-wrap:wrap}.copy-route{border:0;border-radius:5px;background:var(--navy);color:#fff;padding:8px 10px;font-size:10px;font-weight:900;text-transform:uppercase;cursor:pointer}
   .marker-number{display:flex;align-items:center;justify-content:center;width:28px;height:28px;background:var(--navy);color:#fff;border:2px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(3,19,67,.3);font:900 13px var(--font-base)}.marker-origin{background:var(--red)}
   @media(max-width:900px){body{padding:12px}.workspace{grid-template-columns:1fr}.form-column{border-right:0;border-bottom:1px solid var(--grey-300)}}
   @media(max-width:560px){body{padding:0}.app{border-radius:0;min-height:100vh}.topbar{padding:10px 14px}.brand-symbol{width:38px;height:38px}.brand-wordmark{width:145px}.topbar-copy{display:none}.form-column,.route-column{padding:18px}.grid-3{grid-template-columns:1fr 1fr}.summary{grid-template-columns:1fr 1fr}.summary-item:last-child{grid-column:1/-1}.stop{grid-template-columns:34px minmax(0,1fr)}.stop-actions{grid-column:2;display:flex}}
@@ -533,14 +533,21 @@
   function showSavedLinks(){
     var base=window.location.href.replace(/generar-pedido\.html.*$/,'');
     var container=document.getElementById('saved-links');container.innerHTML='';
+    var driverUrl=base+'chofer.html?ruta='+encodeURIComponent(currentRouteId);
+    var driverRow=document.createElement('div');driverRow.className='saved-row driver-link';
+    driverRow.innerHTML='<b>Un solo enlace para el chofer · Ruta completa</b><div class="links"><a target="_blank" rel="noopener" href="'+driverUrl+'">Abrir ruta del chofer</a><button type="button" class="copy-route">Copiar link del chofer</button></div>';
+    driverRow.querySelector('.copy-route').addEventListener('click',function(){
+      var button=this;
+      navigator.clipboard.writeText(driverUrl).then(function(){button.textContent='Link copiado';setTimeout(function(){button.textContent='Copiar link del chofer';},1400);});
+    });
+    container.appendChild(driverRow);
     orders.forEach(function(order,index){
       var row=document.createElement('div');row.className='saved-row';
       row.innerHTML='<b>'+(index+1)+'. '+escapeHtml(order.id)+' · '+escapeHtml(order.cliente)+'</b>'+
-        '<div class="links"><a target="_blank" rel="noopener" href="'+base+'chofer.html?id='+encodeURIComponent(order.id)+'">Abrir para chofer</a>'+
-        '<a target="_blank" rel="noopener" href="'+base+'cliente.html?id='+encodeURIComponent(order.id)+'">Abrir para cliente</a></div>';
+        '<div class="links"><a target="_blank" rel="noopener" href="'+base+'cliente.html?id='+encodeURIComponent(order.id)+'">Abrir link individual del cliente</a></div>';
       container.appendChild(row);
     });
-    document.getElementById('saved-title').textContent='Ruta guardada: '+currentRouteId;
+    document.getElementById('saved-title').textContent='Ruta guardada: '+currentRouteId+' · enlaces listos para compartir';
     document.getElementById('saved-route').style.display='block';
   }
 
