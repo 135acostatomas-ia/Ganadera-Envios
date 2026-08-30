@@ -45,6 +45,7 @@
   .sig-actions{ margin-top:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
   button.ghost{ font-family:var(--font-base); font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; padding:8px 14px; border-radius:4px; border:1px solid var(--grey-100); background:transparent; color:var(--grey); cursor:pointer; }
   .delivered-badge{ display:inline-flex; align-items:center; gap:8px; padding:9px 14px; border-radius:6px; background:#e9f9ef; border:1px solid #3ddc84; color:#1a7a41; font-weight:700; font-size:12px; margin-top:10px; }
+  .back-route{display:none;margin:0 0 14px;text-decoration:none;color:var(--navy);font-size:12px;font-weight:900;}
   .app.route-mode{max-width:1020px;}
   .driver-route{display:none;background:var(--grey-500);padding:22px;}
   .route-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px;}
@@ -60,11 +61,14 @@
   .driver-route-status{font-size:12px;color:var(--grey-100);min-height:18px;margin-bottom:10px;}
   .driver-stops{display:flex;flex-direction:column;gap:10px;}
   .driver-card{display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:12px;background:#fff;border:1px solid var(--grey-300);border-radius:10px;padding:14px;}
+  .driver-card.delivered{border-color:#8dd5a7;background:#f3fbf6;opacity:.82;}
+  .driver-card.delivered .driver-number{background:#1a7a41;}
   .driver-number{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:var(--navy);color:#fff;font-family:var(--font-title);font-size:18px;font-weight:900;}
   .driver-card h2{font-size:15px;color:var(--navy-dark);margin:0 0 4px;}.driver-address{font-size:12px;line-height:1.4;color:var(--grey-100);}
   .driver-details{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px;}.driver-tag{font-size:10px;font-weight:700;color:var(--navy);background:#eef3fb;border-radius:999px;padding:5px 8px;}.driver-tag.eta{background:#e9f9ef;color:#1a7a41;}.driver-comments{font-size:11.5px;color:var(--grey);margin-top:9px;padding:8px 10px;background:var(--grey-500);border-radius:6px;}
   .driver-card-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;align-content:start;}.route-icon{width:34px;height:32px;border:1px solid var(--grey-300);border-radius:5px;background:#fff;color:var(--navy);font-weight:900;cursor:pointer;}.route-link{grid-column:1/-1;text-align:center;text-decoration:none;border-radius:5px;background:var(--blue);color:#fff;padding:8px;font-size:10px;font-weight:900;text-transform:uppercase;}.nav-link{grid-column:1/-1;text-align:center;text-decoration:none;border:1px solid var(--grey-300);border-radius:5px;color:var(--navy);padding:7px;font-size:10px;font-weight:900;text-transform:uppercase;}
   .route-marker{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:var(--navy);border:2px solid #fff;color:#fff;box-shadow:0 2px 6px rgba(3,19,67,.3);font:900 13px var(--font-base);}.route-marker.origin{background:var(--red);}
+  .route-marker.delivered{background:#1a7a41;}
   @media (max-width:480px){
     body{ padding:0; }
     .app{ border-radius:0; min-height:100vh; }
@@ -110,6 +114,7 @@
   <div id="map" class="map"></div>
 
   <div class="panel">
+    <a class="back-route" id="back-to-route" href="#">← Volver a la ruta del día</a>
     <div class="row">
       <div class="stat"><p class="stat-label">Estado</p><p class="stat-value small" id="rep-estado">Detenido</p></div>
       <div class="stat"><p class="stat-label">Distancia al destino</p><p class="stat-value small" id="rep-dist">—</p></div>
@@ -153,6 +158,7 @@
 
   var params = new URLSearchParams(window.location.search);
   var routeId = params.get('ruta');
+  var returnRouteId = params.get('volverRuta');
   var orderId = params.get('id') || (routeId ? null : 'demo');
   if (routeId){
     document.getElementById('app').classList.add('route-mode');
@@ -161,6 +167,11 @@
     document.getElementById('order-id-label').textContent = 'ruta: ' + routeId;
   } else {
     document.getElementById('order-id-label').textContent = 'pedido: ' + orderId;
+    if(returnRouteId){
+      var backToRoute=document.getElementById('back-to-route');
+      backToRoute.href='chofer.html?ruta='+encodeURIComponent(returnRouteId);
+      backToRoute.style.display='inline-block';
+    }
   }
 
   var db = null;
@@ -263,13 +274,29 @@
 
   document.getElementById('btn-clear-sig').addEventListener('click', function(){ ctx.clearRect(0,0,canvas.width,canvas.height); hasSignature=false; });
 
-  document.getElementById('btn-confirm-delivery').addEventListener('click', function(){
+  document.getElementById('btn-confirm-delivery').addEventListener('click', async function(){
     if (!configured){ document.getElementById('delivery-status').innerHTML = '<span style="color:var(--red)">Configurá Firebase primero.</span>'; return; }
     if (!hasSignature){ document.getElementById('delivery-status').innerHTML = '<span style="color:var(--red)">Pedile al cliente que firme.</span>'; return; }
-    var dataUrl = canvas.toDataURL('image/png');
-    db.ref('pedidos/' + orderId + '/entrega').set({ confirmado:true, firma:dataUrl, hora:Date.now() });
-    db.ref('pedidos/' + orderId + '/estado').set('entregado');
-    document.getElementById('delivery-status').innerHTML = '<b style="color:#1a7a41">Entrega confirmada.</b>';
+    var button=this,confirmedAt=Date.now(),dataUrl=canvas.toDataURL('image/png');
+    button.disabled=true;button.textContent='Guardando...';
+    try{
+      var updates={};
+      updates['pedidos/'+orderId+'/entrega']={confirmado:true,firma:dataUrl,hora:confirmedAt};
+      updates['pedidos/'+orderId+'/estado']='entregado';
+      if(returnRouteId)updates['rutas/'+returnRouteId+'/actualizada']=confirmedAt;
+      await db.ref().update(updates);
+      if(sharing&&watchId!==null){navigator.geolocation.clearWatch(watchId);watchId=null;sharing=false;}
+      if(returnRouteId){
+        document.getElementById('delivery-status').innerHTML='<b style="color:#1a7a41">Entrega confirmada. Volviendo a la ruta…</b>';
+        setTimeout(function(){window.location.href='chofer.html?ruta='+encodeURIComponent(returnRouteId);},900);
+      }else{
+        document.getElementById('delivery-status').innerHTML='<b style="color:#1a7a41">Entrega confirmada.</b>';
+        button.textContent='Entrega confirmada';
+      }
+    }catch(error){
+      document.getElementById('delivery-status').innerHTML='<span style="color:var(--red)">No se pudo confirmar: '+driverEscape(error.message)+'</span>';
+      button.disabled=false;button.textContent='Confirmar entrega';
+    }
   });
 
   var driverRoute = null, driverOrders = [], driverMap = null, driverMarkers = null, driverRouteLine = null;
@@ -313,10 +340,21 @@
       return {durations:durations,distances:distances};
     }
   }
-  function driverOptimizedOrder(matrix,hasOrigin){
-    if(driverOrders.length<2)return driverOrders.slice();
-    var remaining=driverOrders.map(function(order,index){return {order:order,matrixIndex:index+(hasOrigin?1:0)};});
-    var result=[],currentIndex,currentTime=driverStartMs();
+  function driverPendingOrders(){return driverOrders.filter(function(order){return order.estado!=='entregado';});}
+  function driverDeliveredOrders(){return driverOrders.filter(function(order){return order.estado==='entregado';});}
+  function driverStartPoint(){
+    var delivered=driverDeliveredOrders();
+    return delivered.length?delivered[delivered.length-1].destino:driverRoute.origen;
+  }
+  function driverCalculationStartMs(){
+    var delivered=driverDeliveredOrders(),start=driverStartMs();
+    if(delivered.length)start=Math.max(start,delivered[delivered.length-1].entregaHora||Date.now());
+    return start;
+  }
+  function driverOptimizedOrder(sourceOrders,matrix,hasOrigin){
+    if(sourceOrders.length<2)return sourceOrders.slice();
+    var remaining=sourceOrders.map(function(order,index){return {order:order,matrixIndex:index+(hasOrigin?1:0)};});
+    var result=[],currentIndex,currentTime=driverCalculationStartMs();
     if(hasOrigin)currentIndex=0;
     else{
       var first=remaining.shift();result.push(first.order);currentIndex=first.matrixIndex;
@@ -360,48 +398,60 @@
       L.marker([driverRoute.origen.lat,driverRoute.origen.lng],{icon:originIcon}).bindTooltip('Salida').addTo(driverMarkers);
       bounds.push([driverRoute.origen.lat,driverRoute.origen.lng]);
     }
-    driverOrders.forEach(function(order,index){
-      var icon=L.divIcon({className:'',html:'<div class="route-marker">'+(index+1)+'</div>',iconSize:[30,30],iconAnchor:[15,15]});
-      L.marker([order.destino.lat,order.destino.lng],{icon:icon}).bindTooltip((index+1)+'. '+order.cliente).addTo(driverMarkers);
+    var pendingNumber=0;
+    driverOrders.forEach(function(order){
+      var delivered=order.estado==='entregado';if(!delivered)pendingNumber++;
+      var markerText=delivered?'✓':pendingNumber;
+      var icon=L.divIcon({className:'',html:'<div class="route-marker'+(delivered?' delivered':'')+'">'+markerText+'</div>',iconSize:[30,30],iconAnchor:[15,15]});
+      L.marker([order.destino.lat,order.destino.lng],{icon:icon}).bindTooltip((delivered?'Entregada · ':pendingNumber+'. ')+order.cliente).addTo(driverMarkers);
       bounds.push([order.destino.lat,order.destino.lng]);
     });
     if(bounds.length)driverMap.fitBounds(bounds,{padding:[28,28],maxZoom:14});
   }
   function driverRenderCards(){
     var container=document.getElementById('driver-stops');container.innerHTML='';
+    var pendingNumber=0;
     driverOrders.forEach(function(order,index){
-      var card=document.createElement('article');card.className='driver-card';
+      var delivered=order.estado==='entregado';if(!delivered)pendingNumber++;
+      var card=document.createElement('article');card.className='driver-card'+(delivered?' delivered':'');
       var phone=order.telefono?'<a class="driver-tag" href="tel:'+driverEscape(order.telefono)+'">Tel. '+driverEscape(order.telefono)+'</a>':'';
       var comments=order.comentarios?'<div class="driver-comments"><b>Indicaciones:</b> '+driverEscape(order.comentarios)+'</div>':'';
-      var manageUrl='chofer.html?id='+encodeURIComponent(order.id);
+      var manageUrl='chofer.html?id='+encodeURIComponent(order.id)+'&volverRuta='+encodeURIComponent(routeId);
       var navUrl='https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(order.destino.lat+','+order.destino.lng);
-      card.innerHTML='<div class="driver-number">'+(index+1)+'</div><div><h2>'+driverEscape(order.id)+' · '+driverEscape(order.cliente)+'</h2>'+
-        '<div class="driver-address">'+driverEscape(order.destino.direccion)+'</div><div class="driver-details"><span class="driver-tag eta">ETA '+driverClock(order.eta)+'</span>'+
+      var statusTag=delivered?'<span class="driver-tag eta">✓ Entregada</span>':'<span class="driver-tag eta">ETA '+driverClock(order.eta)+'</span>';
+      var actions=delivered?'<a class="route-link" href="'+manageUrl+'">Ver entrega</a>':'<button type="button" class="route-icon" data-action="up" title="Mover antes">↑</button><button type="button" class="route-icon" data-action="down" title="Mover después">↓</button><a class="nav-link" target="_blank" rel="noopener" href="'+navUrl+'">Navegar</a><a class="route-link" href="'+manageUrl+'">Gestionar entrega</a>';
+      card.innerHTML='<div class="driver-number">'+(delivered?'✓':pendingNumber)+'</div><div><h2>'+driverEscape(order.id)+' · '+driverEscape(order.cliente)+'</h2>'+
+        '<div class="driver-address">'+driverEscape(order.destino.direccion)+'</div><div class="driver-details">'+statusTag+
         '<span class="driver-tag">'+driverEscape(order.horarioDesde)+'–'+driverEscape(order.horarioHasta)+'</span>'+phone+'<span class="driver-tag">'+driverDuration(driverServiceSeconds())+' de entrega</span></div>'+comments+'</div>'+
-        '<div class="driver-card-actions"><button type="button" class="route-icon" data-action="up" title="Mover antes">↑</button><button type="button" class="route-icon" data-action="down" title="Mover después">↓</button>'+
-        '<a class="nav-link" target="_blank" rel="noopener" href="'+navUrl+'">Navegar</a><a class="route-link" target="_blank" rel="noopener" href="'+manageUrl+'">Gestionar entrega</a></div>';
+        '<div class="driver-card-actions">'+actions+'</div>';
       card.querySelectorAll('[data-action]').forEach(function(button){
         button.addEventListener('click',function(){driverMove(index,button.getAttribute('data-action'));});
       });
       container.appendChild(card);
     });
-    document.getElementById('driver-count').textContent=driverOrders.length;
+    document.getElementById('driver-count').textContent=driverPendingOrders().length+' pendientes · '+driverDeliveredOrders().length+' entregadas';
   }
   async function driverCalculate(optimize){
     if(!driverOrders.length)return;
     document.getElementById('driver-route-status').textContent='Calculando recorrido...';
-    var points=(driverRoute.origen?[driverRoute.origen]:[]).concat(driverOrders.map(function(order){return order.destino;}));
+    var pending=driverPendingOrders(),delivered=driverDeliveredOrders(),startPoint=driverStartPoint();
+    if(!pending.length){
+      document.getElementById('driver-distance').textContent='0 km';document.getElementById('driver-finish').textContent='Ruta completa';
+      document.getElementById('driver-route-status').textContent='Todas las entregas de esta ruta están confirmadas.';
+      driverRenderCards();driverRenderMap();await driverDrawRoute([]);return;
+    }
+    var points=(startPoint?[startPoint]:[]).concat(pending.map(function(order){return order.destino;}));
     var matrix=await driverMatrix(points);
     if(optimize){
-      driverOrders=driverOptimizedOrder(matrix,!!driverRoute.origen);
-      points=(driverRoute.origen?[driverRoute.origen]:[]).concat(driverOrders.map(function(order){return order.destino;}));
+      pending=driverOptimizedOrder(pending,matrix,!!startPoint);driverOrders=pending.concat(delivered);
+      points=(startPoint?[startPoint]:[]).concat(pending.map(function(order){return order.destino;}));
       matrix=await driverMatrix(points);
     }
-    var now=driverStartMs(),totalDistance=0;
-    driverOrders.forEach(function(order,index){
-      var toIndex=index+(driverRoute.origen?1:0),travel=0,distance=0;
-      if(driverRoute.origen||index>0){
-        var fromIndex=driverRoute.origen?toIndex-1:index-1;
+    var now=driverCalculationStartMs(),totalDistance=0;
+    pending.forEach(function(order,index){
+      var toIndex=index+(startPoint?1:0),travel=0,distance=0;
+      if(startPoint||index>0){
+        var fromIndex=startPoint?toIndex-1:index-1;
         travel=matrix.durations[fromIndex][toIndex]||0;distance=matrix.distances[fromIndex][toIndex]||0;
       }
       var rawArrival=now+travel*1000,start=driverWindowMs(order.horarioDesde);
@@ -414,8 +464,9 @@
     driverRenderCards();driverRenderMap();await driverDrawRoute(points);
   }
   async function driverMove(index,action){
+    var pendingCount=driverPendingOrders().length;
     if(action==='up'&&index>0){var item=driverOrders.splice(index,1)[0];driverOrders.splice(index-1,0,item);}
-    if(action==='down'&&index<driverOrders.length-1){var moved=driverOrders.splice(index,1)[0];driverOrders.splice(index+1,0,moved);}
+    if(action==='down'&&index<pendingCount-1){var moved=driverOrders.splice(index,1)[0];driverOrders.splice(index+1,0,moved);}
     await driverCalculate(false);
   }
   async function driverLoadRoute(){
@@ -428,8 +479,9 @@
       stops.sort(function(a,b){return (a.orden||0)-(b.orden||0);});
       driverOrders=await Promise.all(stops.map(async function(stop){
         var orderSnapshot=await db.ref('pedidos/'+stop.pedidoId).once('value'),value=orderSnapshot.val()||{};
-        return {id:stop.pedidoId,cliente:value.cliente||'',telefono:value.telefono||'',horarioDesde:value.horarioDesde||'',horarioHasta:value.horarioHasta||'',comentarios:value.comentarios||'',destino:value.destino||stop.destino,estado:value.estado||'pendiente'};
+        return {id:stop.pedidoId,cliente:value.cliente||'',telefono:value.telefono||'',horarioDesde:value.horarioDesde||'',horarioHasta:value.horarioHasta||'',comentarios:value.comentarios||'',destino:value.destino||stop.destino,estado:value.estado||'pendiente',entregaHora:value.entrega&&value.entrega.hora||null,eta:value.estimadoLlegada||stop.estimadoLlegada||null};
       }));
+      driverOrders=driverPendingOrders().concat(driverDeliveredOrders());
       document.getElementById('driver-route-copy').textContent=(driverRoute.fecha||'')+' · salida '+(driverRoute.horaSalida||'08:00')+' · '+(driverRoute.tiempoServicioMinutos||10)+' min por entrega';
       driverMap=L.map('driver-route-map',{attributionControl:false}).setView([-34.6037,-58.3816],11);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(driverMap);
