@@ -38,7 +38,7 @@
   .primary{border:0;border-radius:7px;background:var(--blue);color:#fff;padding:12px 16px;font-size:11.5px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;box-shadow:0 3px 8px rgba(31,110,212,.18)}.primary:hover{background:var(--blue-dark)}.primary:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
   .primary.full{width:100%}.secondary{border:1px solid var(--grey-200);border-radius:7px;background:#fff;color:var(--navy);padding:10px 13px;font-size:10.5px;font-weight:900;letter-spacing:.04em;text-transform:uppercase}.secondary:hover{background:#eef4fd;border-color:var(--blue)}
   .danger{color:#b42318}.edit-note{display:none;background:var(--warning-bg);border:1px solid #f0cc85;color:var(--warning);padding:9px 10px;border-radius:6px;font-size:11.5px;font-weight:700;margin-bottom:12px}
-  .route-toolbar{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}.toolbar-section{background:#fff;border:1px solid var(--grey-300);border-radius:10px;padding:11px}.toolbar-label{display:block;margin:0 0 8px;font-size:9px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--grey-100)}.toolbar-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}.toolbar-actions button{min-height:42px;padding:9px 10px}.toolbar-actions button::before{display:inline-block;margin-right:6px;font-size:14px;vertical-align:-1px}.optimize-action::before{content:'↗'}.recalculate-action::before{content:'◷'}.load-action::before{content:'↙'}.save-action::before{content:'✓'}.delete-route-action::before{content:'×'}.load-action{border-color:#9cb5da;background:#f4f7fd;color:var(--navy)}.save-action{border-color:#72bf8e;background:var(--good-bg);color:var(--good)}.save-action:hover{border-color:var(--good);background:#dff5e7}.delete-route-action{grid-column:1/-1;border-color:#e6aaa5;background:#fff7f6;color:#b42318}.delete-route-action:hover{border-color:#b42318;background:#fdecea}.delete-route-action:disabled{opacity:.45;cursor:not-allowed}
+  .route-toolbar{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}.toolbar-section{background:#fff;border:1px solid var(--grey-300);border-radius:10px;padding:11px}.toolbar-label{display:block;margin:0 0 8px;font-size:9px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--grey-100)}.toolbar-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}.toolbar-actions button{min-height:42px;padding:9px 10px}.toolbar-actions button::before{display:inline-block;margin-right:6px;font-size:14px;vertical-align:-1px}.optimize-action::before{content:'↗'}.recalculate-action::before{content:'◷'}.load-action::before{content:'↙'}.save-action::before{content:'✓'}.publish-action::before{content:'▶'}.delete-route-action::before{content:'×'}.load-action{border-color:#9cb5da;background:#f4f7fd;color:var(--navy)}.save-action{border-color:#72bf8e;background:var(--good-bg);color:var(--good)}.save-action:hover{border-color:var(--good);background:#dff5e7}.publish-action{grid-column:1/-1;border-color:#7bb4ff;background:#eef5ff;color:var(--blue)}.publish-action:hover{border-color:var(--blue);background:#e0edff}.publish-action:disabled{opacity:.45;cursor:not-allowed}.delete-route-action{grid-column:1/-1;border-color:#e6aaa5;background:#fff7f6;color:#b42318}.delete-route-action:hover{border-color:#b42318;background:#fdecea}.delete-route-action:disabled{opacity:.45;cursor:not-allowed}
   .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}.summary-item{background:#fff;border:1px solid var(--grey-300);border-radius:8px;padding:10px}.summary-label{display:block;font-size:9px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:var(--grey-100);margin-bottom:4px}.summary-value{font-family:var(--font-title);font-weight:900;font-size:17px;color:var(--navy-dark)}
   #route-map{height:260px;border:1px solid var(--grey-300);border-radius:9px;margin-bottom:14px;background:#e9edf4}.empty{padding:28px 18px;text-align:center;background:#fff;border:1px dashed var(--grey-200);border-radius:9px;color:var(--grey-100);font-size:12px;line-height:1.5}
   .stop-list{display:flex;flex-direction:column;gap:9px}.stop{display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:10px;align-items:start;background:#fff;border:1px solid var(--grey-300);border-radius:9px;padding:11px}.stop-number{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:var(--navy);color:#fff;font-family:var(--font-title);font-size:16px;font-weight:900}
@@ -123,6 +123,7 @@
           <div class="toolbar-actions">
             <button class="secondary load-action" type="button" id="btn-load-route" title="Carga la ruta guardada para la fecha seleccionada">Cargar ruta del día</button>
             <button class="secondary save-action" type="button" id="btn-save-route" title="Guarda los cambios de la ruta actual">Guardar ruta</button>
+            <button class="secondary publish-action" type="button" id="btn-publish-route" title="Hace visible la ruta de hoy en el acceso permanente del chofer" disabled>Habilitar para el chofer</button>
             <button class="secondary delete-route-action" type="button" id="btn-delete-route" title="Elimina la ruta cargada para crear una nueva" disabled>Eliminar ruta cargada</button>
           </div>
         </div>
@@ -182,6 +183,8 @@
   var activeRouteDate = null;
   var pendingRouteDate = null;
   var isRouteDirty = false;
+  var currentRoutePublished = false;
+  var currentRouteStatus = 'borrador';
   var routeLayer = null;
   var markerLayer = L.layerGroup();
   var map = L.map('route-map', {attributionControl:false}).setView([-34.6037,-58.3816], 11);
@@ -563,6 +566,7 @@
 
   function resetRouteWorkspace(){
     orders=[];currentRouteId=null;previousRouteOrderIds=[];editIndex=null;selectedDestination=null;isRouteDirty=false;
+    currentRoutePublished=false;currentRouteStatus='borrador';
     origin=Object.assign({},DEFAULT_ORIGIN);
     document.getElementById('departure-time').value='10:00';
     document.getElementById('service-minutes').value='15';
@@ -573,6 +577,7 @@
     document.getElementById('btn-save-route').textContent='Guardar ruta';
     document.getElementById('btn-delete-route').disabled=true;
     document.getElementById('btn-delete-route').textContent='Eliminar ruta cargada';
+    updatePublishButton();
     clearOrderForm();renderOrders();renderMap();
     document.getElementById('summary-distance').textContent='—';
     document.getElementById('summary-finish').textContent='—';
@@ -602,6 +607,8 @@
         return {id:stop.pedidoId,referencia:value.referencia||'',cliente:value.cliente||'',telefono:value.telefono||'',horarioDesde:value.horarioDesde||'',horarioHasta:value.horarioHasta||'',comentarios:value.comentarios||'',destino:value.destino||stop.destino};
       }));
       orders=loaded;currentRouteId=selectedId;previousRouteOrderIds=loaded.map(function(order){return order.id;});
+      currentRoutePublished=selectedRoute.publicadaChofer===true;
+      currentRouteStatus=selectedRoute.estadoRuta||'borrador';
       origin=selectedRoute.origen||null;
       document.getElementById('departure-time').value=selectedRoute.horaSalida||'10:00';
       document.getElementById('service-minutes').value=selectedRoute.tiempoServicioMinutos||15;
@@ -617,6 +624,7 @@
       document.getElementById('route-status').textContent='Ruta cargada. Podés editarla y volver a guardarla.';
       document.getElementById('btn-save-route').textContent='Actualizar ruta';
       document.getElementById('btn-delete-route').disabled=false;
+      updatePublishButton();
       return true;
     }catch(error){alert('No se pudo cargar la ruta: '+error.message);return false;}
   }
@@ -685,21 +693,70 @@
         }
         routeOrders.push({pedidoId:order.id,orden:index+1,estimadoLlegada:order.eta,destino:order.destino});
       });
-      updates['rutas/'+currentRouteId]={
-        fecha:routeDate,horaSalida:document.getElementById('departure-time').value||'10:00',
-        origen:origin||null,tiempoServicioMinutos:Math.round(serviceSeconds()/60),pedidos:routeOrders,actualizada:createdAt
-      };
+      var routePath='rutas/'+currentRouteId;
+      updates[routePath+'/fecha']=routeDate;
+      updates[routePath+'/horaSalida']=document.getElementById('departure-time').value||'10:00';
+      updates[routePath+'/origen']=origin||null;
+      updates[routePath+'/tiempoServicioMinutos']=Math.round(serviceSeconds()/60);
+      updates[routePath+'/pedidos']=routeOrders;
+      updates[routePath+'/actualizada']=createdAt;
+      if(!routeWillBeReplaced){
+        updates[routePath+'/publicadaChofer']=false;
+        updates[routePath+'/estadoRuta']='borrador';
+        currentRoutePublished=false;currentRouteStatus='borrador';
+      }
       await db.ref().update(updates);
       previousRouteOrderIds=orders.map(function(order){return order.id;});
       isRouteDirty=false;showSavedLinks();
       document.getElementById('btn-delete-route').disabled=false;
-      document.getElementById('route-status').textContent='Ruta guardada correctamente en Firebase.';
+      updatePublishButton();
+      document.getElementById('route-status').textContent=currentRoutePublished?'Ruta actualizada. El chofer verá los cambios automáticamente.':'Ruta guardada correctamente en Firebase.';
       return true;
     }catch(error){alert('No se pudo guardar la ruta: '+error.message);return false;}
     finally{if(button){button.disabled=false;button.textContent='Actualizar ruta';}}
   }
 
   document.getElementById('btn-save-route').addEventListener('click',function(){saveCurrentRoute(this);});
+
+  function updatePublishButton(){
+    var button=document.getElementById('btn-publish-route');
+    if(!button)return;
+    var isToday=activeRouteDate===todayValue();
+    button.disabled=!currentRouteId||!isToday||currentRouteStatus==='completada'||currentRouteStatus==='en_curso';
+    if(currentRouteStatus==='completada')button.textContent='Ruta completada';
+    else if(currentRouteStatus==='en_curso')button.textContent='Ruta en curso';
+    else if(currentRoutePublished)button.textContent='Ruta disponible para el chofer';
+    else button.textContent=isToday?'Habilitar para el chofer':'Solo se habilita la ruta de hoy';
+  }
+
+  document.getElementById('btn-publish-route').addEventListener('click',async function(){
+    if(!currentRouteId){alert('Primero guardá la ruta.');return;}
+    if(activeRouteDate!==todayValue()){alert('Solo podés habilitar para el chofer una ruta correspondiente a hoy.');return;}
+    if(!window.confirm('¿Habilitar esta ruta para el chofer?\n\nAparecerá inmediatamente en el acceso directo de ambos celulares.'))return;
+    var button=this;button.disabled=true;button.textContent='Habilitando...';
+    try{
+      var result=await new Promise(function(resolve,reject){
+        db.ref('rutas/'+currentRouteId).transaction(function(route){
+          if(!route||route.fecha!==todayValue())return;
+          route.publicadaChofer=true;
+          route.publicadaEn=Date.now();
+          if(route.estadoRuta!=='en_curso')route.estadoRuta='disponible';
+          return route;
+        },function(error,committed,snapshot){
+          if(error){reject(error);return;}
+          resolve({committed:committed,route:snapshot.val()});
+        },false);
+      });
+      if(!result.committed)throw new Error('La ruta no corresponde al día de hoy.');
+      currentRoutePublished=true;currentRouteStatus=result.route.estadoRuta||'disponible';
+      updatePublishButton();
+      document.getElementById('route-status').textContent='La ruta ya está disponible para el chofer.';
+      alert('La ruta ya está disponible para el chofer.');
+    }catch(error){
+      alert('No se pudo habilitar la ruta: '+error.message);
+      updatePublishButton();
+    }
+  });
 
   document.getElementById('btn-delete-route').addEventListener('click',async function(){
     if(!configured){alert('Configurá Firebase primero.');return;}
@@ -781,14 +838,9 @@
   function showSavedLinks(){
     var base=window.location.href.replace(/generar-pedido\.html.*$/,'');
     var container=document.getElementById('saved-links');container.innerHTML='';
-    var driverUrl=base+'chofer.html?ruta='+encodeURIComponent(currentRouteId);
     var driverRow=document.createElement('div');driverRow.className='saved-row driver-link';
-    driverRow.innerHTML='<b>Un solo enlace para el chofer · Ruta completa</b><div class="links"><a target="_blank" rel="noopener" href="'+driverUrl+'">Abrir ruta del chofer</a><button type="button" class="copy-route">Copiar link</button><button type="button" class="share-link">Compartir</button></div>';
-    driverRow.querySelector('.copy-route').addEventListener('click',function(){
-      var button=this;
-      navigator.clipboard.writeText(driverUrl).then(function(){button.textContent='Link copiado';setTimeout(function(){button.textContent='Copiar link';},1400);});
-    });
-    driverRow.querySelector('.share-link').addEventListener('click',function(){shareGeneratedLink('Ruta de entregas · Ganadera Panamericana',driverUrl);});
+    var driverMessage=currentRoutePublished?'La ruta está sincronizada con el acceso permanente del chofer.':'La ruta quedó guardada como borrador. Habilitala cuando corresponda al día de hoy.';
+    driverRow.innerHTML='<b>Acceso permanente del chofer</b><div class="status" style="margin-top:6px">'+escapeHtml(driverMessage)+'</div>';
     container.appendChild(driverRow);
     orders.forEach(function(order,index){
       var row=document.createElement('div');row.className='saved-row';
@@ -798,7 +850,7 @@
       row.querySelector('.share-link').addEventListener('click',function(){shareGeneratedLink('Seguimiento de tu pedido · Ganadera Panamericana',customerUrl);});
       container.appendChild(row);
     });
-    document.getElementById('saved-title').textContent='Ruta guardada: '+currentRouteId+' · enlaces listos para compartir';
+    document.getElementById('saved-title').textContent='Ruta guardada: '+currentRouteId;
     document.getElementById('saved-route').style.display='block';
   }
 

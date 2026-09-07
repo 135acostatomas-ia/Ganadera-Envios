@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ganadera Panamericana · Chofer</title>
 <link rel="icon" type="image/png" href="assets/ganadera-logo.png">
+<link rel="apple-touch-icon" href="assets/ganadera-logo.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#061c5d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Ganadera Envíos">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@700;900&family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
@@ -49,7 +55,7 @@
   .locked-action{grid-column:1/-1;text-align:center;border:1px solid #8dd5a7;border-radius:5px;background:#e9f9ef;color:#1a7a41;padding:8px;font-size:10px;font-weight:900;text-transform:uppercase}
   .back-route{display:none;margin:0 0 14px;text-decoration:none;color:var(--navy);font-size:12px;font-weight:900;}
   .app.route-mode{max-width:1020px;}
-  .driver-route{display:none;background:var(--grey-500);padding:22px;}
+  .driver-route{display:none;background:var(--grey-500);padding:22px;}.driver-home-state{display:none;text-align:center;background:#fff;border:1px dashed var(--grey-300);border-radius:10px;padding:34px 20px;margin-top:12px}.driver-home-state img{width:72px;height:72px;object-fit:contain;margin-bottom:12px}.driver-home-state h2{font-family:var(--font-title);font-size:22px;color:var(--navy-dark);margin:0 0 7px}.driver-home-state p{font-size:12px;line-height:1.55;color:var(--grey-100);margin:0}.driver-active-content{display:none}
   .route-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px;}
   .route-heading h1{font-family:var(--font-title);font-size:24px;color:var(--navy-dark);margin:0 0 4px;}
   .route-heading p{font-size:12px;color:var(--grey-100);margin:0;}
@@ -58,7 +64,7 @@
   #driver-route-map{height:330px;border:1px solid var(--grey-300);border-radius:10px;margin-bottom:14px;}
   .route-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
   .route-toolbar button{flex:1;min-width:150px;padding:11px 14px;border-radius:5px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;cursor:pointer;}
-  .route-toolbar .route-primary{border:0;background:var(--blue);color:#fff;}.route-toolbar .route-secondary{border:1px solid var(--grey-300);background:#fff;color:var(--navy);}
+  .route-toolbar .route-primary{border:0;background:var(--blue);color:#fff;}.route-toolbar .route-secondary{border:1px solid var(--grey-300);background:#fff;color:var(--navy);}.route-toolbar .route-start{flex-basis:100%;border:0;background:#1a7a41;color:#fff}
   .route-toolbar button:disabled{opacity:.55;cursor:not-allowed;}
   .driver-route-status{font-size:12px;color:var(--grey-100);min-height:18px;margin-bottom:10px;}
   .driver-stops{display:flex;flex-direction:column;gap:10px;}
@@ -96,20 +102,28 @@
   </div>
 
   <section class="driver-route" id="route-app">
-    <div class="route-heading"><div><h1>Ruta del día</h1><p id="driver-route-copy">Cargando paradas y horarios...</p></div></div>
-    <div class="route-toolbar">
-      <button type="button" class="route-primary" id="driver-optimize">Optimizar ruta</button>
-      <button type="button" class="route-secondary" id="driver-recalculate">Recalcular horarios</button>
-      <button type="button" class="route-secondary" id="driver-save">Guardar cambios</button>
+    <div class="route-heading"><div><h1>Ruta del día</h1><p id="driver-route-copy">Buscando la ruta activa...</p></div></div>
+    <div class="driver-home-state" id="driver-home-state">
+      <img src="assets/ganadera-logo.png" alt="Ganadera Panamericana">
+      <h2>No hay una ruta disponible</h2>
+      <p>Cuando administración habilite la ruta de hoy, aparecerá automáticamente en esta pantalla.</p>
     </div>
-    <div class="route-summary">
-      <div class="stat"><p class="stat-label">Paradas</p><p class="stat-value small" id="driver-count">—</p></div>
-      <div class="stat"><p class="stat-label">Distancia total</p><p class="stat-value small" id="driver-distance">—</p></div>
-      <div class="stat"><p class="stat-label">Fin estimado</p><p class="stat-value small" id="driver-finish">—</p></div>
+    <div class="driver-active-content" id="driver-active-content">
+      <div class="route-toolbar">
+        <button type="button" class="route-start" id="driver-start">Iniciar recorrido</button>
+        <button type="button" class="route-primary" id="driver-optimize">Optimizar ruta</button>
+        <button type="button" class="route-secondary" id="driver-recalculate">Recalcular horarios</button>
+        <button type="button" class="route-secondary" id="driver-save">Guardar cambios</button>
+      </div>
+      <div class="route-summary">
+        <div class="stat"><p class="stat-label">Paradas</p><p class="stat-value small" id="driver-count">—</p></div>
+        <div class="stat"><p class="stat-label">Distancia total</p><p class="stat-value small" id="driver-distance">—</p></div>
+        <div class="stat"><p class="stat-label">Fin estimado</p><p class="stat-value small" id="driver-finish">—</p></div>
+      </div>
+      <div id="driver-route-map"></div>
+      <div class="driver-route-status" id="driver-route-status"></div>
+      <div class="driver-stops" id="driver-stops"></div>
     </div>
-    <div id="driver-route-map"></div>
-    <div class="driver-route-status" id="driver-route-status"></div>
-    <div class="driver-stops" id="driver-stops"></div>
   </section>
 
   <div id="order-app">
@@ -160,19 +174,21 @@
   if (!configured) document.getElementById('config-warning').style.display = 'block';
 
   var params = new URLSearchParams(window.location.search);
-  var routeId = params.get('ruta');
-  var returnRouteId = params.get('volverRuta');
-  var orderId = params.get('id') || (routeId ? null : 'demo');
-  if (routeId){
+  var routeId=params.get('ruta');
+  var returnRouteId=params.get('volverRuta');
+  var returnToPermanent=params.get('volverInicio')==='1';
+  var permanentDriverMode=!params.has('ruta')&&!params.has('id');
+  var orderId=params.get('id')||(permanentDriverMode?null:'demo');
+  if(routeId||permanentDriverMode){
     document.getElementById('app').classList.add('route-mode');
-    document.getElementById('route-app').style.display = 'block';
-    document.getElementById('order-app').style.display = 'none';
-    document.getElementById('order-id-label').textContent = 'ruta: ' + routeId;
-  } else {
-    document.getElementById('order-id-label').textContent = 'pedido: ' + orderId;
-    if(returnRouteId){
+    document.getElementById('route-app').style.display='block';
+    document.getElementById('order-app').style.display='none';
+    document.getElementById('order-id-label').textContent=permanentDriverMode?'ruta de hoy':'ruta: '+routeId;
+  }else{
+    document.getElementById('order-id-label').textContent='pedido: '+orderId;
+    if(returnRouteId||returnToPermanent){
       var backToRoute=document.getElementById('back-to-route');
-      backToRoute.href='chofer.html?ruta='+encodeURIComponent(returnRouteId);
+      backToRoute.href=returnToPermanent?'chofer.html':'chofer.html?ruta='+encodeURIComponent(returnRouteId);
       backToRoute.style.display='inline-block';
     }
   }
@@ -326,9 +342,9 @@
       }
       if(returnRouteId)await db.ref('rutas/'+returnRouteId+'/actualizada').set(confirmedAt);
       if(sharing&&watchId!==null){navigator.geolocation.clearWatch(watchId);watchId=null;sharing=false;}
-      if(returnRouteId){
+      if(returnRouteId||returnToPermanent){
         document.getElementById('delivery-status').innerHTML='<b style="color:#1a7a41">Entrega confirmada. Volviendo a la ruta…</b>';
-        setTimeout(function(){window.location.href='chofer.html?ruta='+encodeURIComponent(returnRouteId);},900);
+        setTimeout(function(){window.location.href=returnToPermanent?'chofer.html':'chofer.html?ruta='+encodeURIComponent(returnRouteId);},900);
       }else{
         lockDeliveredOrder(transactionResult.order||{});
       }
@@ -341,6 +357,9 @@
   });
 
   var driverRoute = null, driverOrders = [], driverMap = null, driverMarkers = null, driverRouteLine = null;
+  var driverDeviceId=localStorage.getItem('ganadera-driver-device');
+  if(!driverDeviceId){driverDeviceId='dispositivo-'+Date.now()+'-'+Math.random().toString(36).slice(2,8);localStorage.setItem('ganadera-driver-device',driverDeviceId);}
+  function canManageDriverRoute(){return !!driverRoute&&driverRoute.estadoRuta==='en_curso'&&driverRoute.tomadaPor===driverDeviceId;}
 
   function driverEscape(value){
     return String(value == null ? '' : value).replace(/[&<>"']/g,function(char){
@@ -457,10 +476,11 @@
       var card=document.createElement('article');card.className='driver-card'+(delivered?' delivered':'');
       var phone=order.telefono?'<a class="driver-tag" href="tel:'+driverEscape(order.telefono)+'">Tel. '+driverEscape(order.telefono)+'</a>':'';
       var comments=order.comentarios?'<div class="driver-comments"><b>Indicaciones:</b> '+driverEscape(order.comentarios)+'</div>':'';
-      var manageUrl='chofer.html?id='+encodeURIComponent(order.id)+'&volverRuta='+encodeURIComponent(routeId);
+      var manageUrl='chofer.html?id='+encodeURIComponent(order.id)+'&volverRuta='+encodeURIComponent(routeId)+(permanentDriverMode?'&volverInicio=1':'');
       var navUrl='https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(order.destino.lat+','+order.destino.lng);
       var statusTag=delivered?'<span class="driver-tag eta">✓ Entregada</span>':'<span class="driver-tag eta">ETA '+driverClock(order.eta)+'</span>';
-      var actions=delivered?'<span class="locked-action">✓ Entrega cerrada</span>':'<button type="button" class="route-icon" data-action="up" title="Mover antes">↑</button><button type="button" class="route-icon" data-action="down" title="Mover después">↓</button><a class="nav-link" target="_blank" rel="noopener" href="'+navUrl+'">Navegar</a><a class="route-link" href="'+manageUrl+'">Gestionar entrega</a>';
+      var canManage=canManageDriverRoute();
+      var actions=delivered?'<span class="locked-action">✓ Entrega cerrada</span>':(canManage?'<button type="button" class="route-icon" data-action="up" title="Mover antes">↑</button><button type="button" class="route-icon" data-action="down" title="Mover después">↓</button><a class="nav-link" target="_blank" rel="noopener" href="'+navUrl+'">Navegar</a><a class="route-link" href="'+manageUrl+'">Gestionar entrega</a>':'<span class="locked-action">'+(driverRoute.estadoRuta==='en_curso'?'En curso en otro celular':'Tocá “Iniciar recorrido”')+'</span>');
       card.innerHTML='<div class="driver-number">'+(delivered?'✓':pendingNumber)+'</div><div><h2>'+driverEscape(order.id)+' · '+driverEscape(order.cliente)+'</h2>'+
         '<div class="driver-address">'+driverEscape(order.destino.direccion)+'</div><div class="driver-details">'+(order.referencia?'<span class="driver-tag">Ref. '+driverEscape(order.referencia)+'</span>':'')+statusTag+
         '<span class="driver-tag">'+driverEscape(order.horarioDesde)+'–'+driverEscape(order.horarioHasta)+'</span>'+phone+'<span class="driver-tag">'+driverDuration(driverServiceSeconds())+' de entrega</span></div>'+comments+'</div>'+
@@ -477,6 +497,9 @@
     document.getElementById('driver-route-status').textContent='Calculando recorrido...';
     var pending=driverPendingOrders(),delivered=driverDeliveredOrders(),startPoint=driverStartPoint();
     if(!pending.length){
+      if(canManageDriverRoute()&&driverRoute.estadoRuta!=='completada'){
+        db.ref('rutas/'+routeId).update({estadoRuta:'completada',completadaEn:Date.now(),actualizada:Date.now()});
+      }
       document.getElementById('driver-distance').textContent='0 km';document.getElementById('driver-finish').textContent='Ruta completa';
       document.getElementById('driver-route-status').textContent='Todas las entregas de esta ruta están confirmadas.';
       driverRenderCards();driverRenderMap();await driverDrawRoute([]);return;
@@ -510,14 +533,33 @@
     if(action==='down'&&index<pendingCount-1){var moved=driverOrders.splice(index,1)[0];driverOrders.splice(index+1,0,moved);}
     await driverCalculate(false);
   }
-  var driverLoadVersion=0;
-  function driverLoadRoute(){
-    if(!configured){document.getElementById('driver-route-status').textContent='Falta configurar Firebase.';return;}
-    db.ref('rutas/'+routeId).on('value',async function(snapshot){
+  var driverLoadVersion=0,driverRouteRef=null,driverTodayRef=null;
+
+  function driverShowEmpty(){
+    driverRoute=null;driverOrders=[];
+    document.getElementById('driver-home-state').style.display='block';
+    document.getElementById('driver-active-content').style.display='none';
+    document.getElementById('driver-route-copy').textContent='Esperando una ruta habilitada para hoy.';
+  }
+  function driverApplyAccessState(){
+    var startButton=document.getElementById('driver-start');
+    var mine=canManageDriverRoute(),inProgress=driverRoute&&driverRoute.estadoRuta==='en_curso';
+    startButton.disabled=mine||inProgress||!driverRoute;
+    startButton.textContent=mine?'Recorrido iniciado':(inProgress?'En curso en otro celular':'Iniciar recorrido');
+    document.getElementById('driver-optimize').disabled=!mine;
+    document.getElementById('driver-recalculate').disabled=!mine;
+    document.getElementById('driver-save').disabled=!mine;
+  }
+  function driverSubscribeRoute(selectedRouteId){
+    if(driverRouteRef&&routeId===selectedRouteId)return;
+    if(driverRouteRef)driverRouteRef.off();
+    routeId=selectedRouteId;
+    driverRouteRef=db.ref('rutas/'+routeId);
+    driverRouteRef.on('value',async function(snapshot){
       var loadVersion=++driverLoadVersion;
       try{
         driverRoute=snapshot.val();
-        if(!driverRoute)throw new Error('La ruta no existe o fue eliminada.');
+        if(!driverRoute||driverRoute.estadoRuta==='completada'){driverShowEmpty();return;}
         var stops=Array.isArray(driverRoute.pedidos)?driverRoute.pedidos:Object.values(driverRoute.pedidos||{});
         stops.sort(function(a,b){return (a.orden||0)-(b.orden||0);});
         var loadedOrders=await Promise.all(stops.map(async function(stop){
@@ -526,21 +568,60 @@
         }));
         if(loadVersion!==driverLoadVersion)return;
         driverOrders=loadedOrders.filter(function(order){return order.estado!=='entregado';}).concat(loadedOrders.filter(function(order){return order.estado==='entregado';}));
+        document.getElementById('driver-home-state').style.display='none';
+        document.getElementById('driver-active-content').style.display='block';
         document.getElementById('driver-route-copy').textContent=(driverRoute.fecha||'')+' · salida '+(driverRoute.horaSalida||'08:00')+' · '+(driverRoute.tiempoServicioMinutos||10)+' min por entrega';
         if(!driverMap){
           driverMap=L.map('driver-route-map',{attributionControl:false}).setView([-34.6037,-58.3816],11);
           L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(driverMap);
           driverMarkers=L.layerGroup().addTo(driverMap);
-        }
+        }else{setTimeout(function(){driverMap.invalidateSize();},0);}
+        driverApplyAccessState();
         await driverCalculate(false);
-        document.getElementById('driver-route-status').textContent='Ruta sincronizada con los últimos cambios.';
+        document.getElementById('driver-route-status').textContent=canManageDriverRoute()?'Ruta sincronizada. Podés comenzar las entregas.':(driverRoute.estadoRuta==='en_curso'?'Esta ruta ya está en curso en otro celular.':'La ruta está disponible. Tocá “Iniciar recorrido”.');
       }catch(error){document.getElementById('driver-route-status').textContent=error.message;}
     });
   }
-  document.getElementById('driver-optimize').addEventListener('click',function(){driverCalculate(true);});
-  document.getElementById('driver-recalculate').addEventListener('click',function(){driverCalculate(false);});
+  function driverLoadToday(){
+    if(!configured){driverShowEmpty();return;}
+    var today=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
+    driverTodayRef=db.ref('rutas').orderByChild('fecha').equalTo(today);
+    driverTodayRef.on('value',function(snapshot){
+      var selectedId=null,selected=null;
+      snapshot.forEach(function(child){
+        var value=child.val()||{};
+        if(value.publicadaChofer!==true||value.estadoRuta==='completada')return;
+        var valueInProgress=value.estadoRuta==='en_curso',selectedInProgress=selected&&selected.estadoRuta==='en_curso';
+        if(!selected||(valueInProgress&&!selectedInProgress)||(valueInProgress===selectedInProgress&&(value.actualizada||0)>(selected.actualizada||0))){selectedId=child.key;selected=value;}
+      });
+      if(selectedId)driverSubscribeRoute(selectedId);else driverShowEmpty();
+    });
+  }
+  function driverLoadRoute(){
+    if(!configured){document.getElementById('driver-route-status').textContent='Falta configurar Firebase.';return;}
+    driverSubscribeRoute(routeId);
+  }
+  document.getElementById('driver-start').addEventListener('click',async function(){
+    if(!driverRoute||!routeId)return;
+    var button=this;button.disabled=true;button.textContent='Iniciando...';
+    try{
+      var result=await new Promise(function(resolve,reject){
+        db.ref('rutas/'+routeId).transaction(function(route){
+          if(!route||route.publicadaChofer!==true||route.estadoRuta==='completada')return;
+          if(route.estadoRuta==='en_curso'&&route.tomadaPor!==driverDeviceId)return;
+          route.estadoRuta='en_curso';route.tomadaPor=driverDeviceId;route.iniciadaEn=route.iniciadaEn||Date.now();route.actualizada=Date.now();
+          return route;
+        },function(error,committed,snapshot){
+          if(error){reject(error);return;}resolve({committed:committed,route:snapshot.val()});
+        },false);
+      });
+      if(!result.committed)throw new Error('La ruta ya fue iniciada desde otro celular.');
+    }catch(error){document.getElementById('driver-route-status').textContent=error.message;driverApplyAccessState();}
+  });
+  document.getElementById('driver-optimize').addEventListener('click',function(){if(canManageDriverRoute())driverCalculate(true);});
+  document.getElementById('driver-recalculate').addEventListener('click',function(){if(canManageDriverRoute())driverCalculate(false);});
   document.getElementById('driver-save').addEventListener('click',async function(){
-    if(!driverRoute||!driverOrders.length)return;
+    if(!driverRoute||!driverOrders.length||!canManageDriverRoute())return;
     var button=this;button.disabled=true;button.textContent='Guardando...';
     try{
       var updates={},routeStops=[];
@@ -554,7 +635,7 @@
     }catch(error){document.getElementById('driver-route-status').textContent='No se pudo guardar: '+error.message;}
     finally{button.disabled=false;button.textContent='Guardar cambios';}
   });
-  if(routeId)driverLoadRoute();
+  if(permanentDriverMode)driverLoadToday();else if(routeId)driverLoadRoute();
 </script>
 </body>
 </html>

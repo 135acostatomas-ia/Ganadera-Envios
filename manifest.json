@@ -1,0 +1,17 @@
+{
+  "name": "Ganadera Panamericana Envíos",
+  "short_name": "Ganadera Envíos",
+  "start_url": "/chofer.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f4f7fc",
+  "theme_color": "#061c5d",
+  "icons": [
+    {
+      "src": "/assets/ganadera-logo.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
