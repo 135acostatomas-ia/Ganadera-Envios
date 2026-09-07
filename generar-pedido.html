@@ -43,7 +43,7 @@
   #route-map{height:260px;border:1px solid var(--grey-300);border-radius:9px;margin-bottom:14px;background:#e9edf4}.empty{padding:28px 18px;text-align:center;background:#fff;border:1px dashed var(--grey-200);border-radius:9px;color:var(--grey-100);font-size:12px;line-height:1.5}
   .stop-list{display:flex;flex-direction:column;gap:9px}.stop{display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:10px;align-items:start;background:#fff;border:1px solid var(--grey-300);border-radius:9px;padding:11px}.stop-number{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:var(--navy);color:#fff;font-family:var(--font-title);font-size:16px;font-weight:900}
   .stop-title{font-size:13px;font-weight:900;color:var(--navy-dark);margin-bottom:3px}.stop-address{font-size:11.5px;line-height:1.35;color:var(--grey-100)}.stop-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}.tag{font-size:9.5px;font-weight:700;color:var(--navy);background:#eef3fb;border-radius:999px;padding:4px 7px}.tag.eta{background:var(--good-bg);color:var(--good)}.tag.late{background:#fdece2;color:#b42318}.stop-actions{display:grid;grid-template-columns:1fr 1fr;gap:5px}.icon-btn{width:30px;height:28px;border:1px solid var(--grey-200);border-radius:5px;background:#fff;color:var(--navy);font-weight:900}.icon-btn:hover{background:#eef4fd}.icon-btn.remove{color:#b42318}
-  .saved{display:none;margin-top:16px;background:var(--good-bg);border:1px solid #8dd5a7;border-radius:9px;padding:14px}.saved-title{font-size:12px;font-weight:900;color:var(--good);margin-bottom:10px}.saved-row{background:#fff;border-radius:6px;padding:9px;margin-top:7px}.saved-row b{font-size:11px;color:var(--navy-dark)}.links{display:flex;gap:8px;margin-top:6px}.links a{font-size:10.5px;color:var(--blue);font-weight:700;text-decoration:none}.driver-link{border:1px solid #8dd5a7;padding:12px}.driver-link .links{align-items:center;flex-wrap:wrap}.copy-route{border:0;border-radius:5px;background:var(--navy);color:#fff;padding:8px 10px;font-size:10px;font-weight:900;text-transform:uppercase;cursor:pointer}
+  .saved{display:none;margin-top:16px;background:var(--good-bg);border:1px solid #8dd5a7;border-radius:9px;padding:14px}.saved-title{font-size:12px;font-weight:900;color:var(--good);margin-bottom:10px}.saved-row{background:#fff;border-radius:6px;padding:9px;margin-top:7px}.saved-row b{font-size:11px;color:var(--navy-dark)}.links{display:flex;gap:8px;margin-top:6px}.links a{font-size:10.5px;color:var(--blue);font-weight:700;text-decoration:none}.driver-link{border:1px solid #8dd5a7;padding:12px}.driver-link .links{align-items:center;flex-wrap:wrap}.copy-route,.share-link{border:0;border-radius:5px;background:var(--navy);color:#fff;padding:8px 10px;font-size:10px;font-weight:900;text-transform:uppercase;cursor:pointer}.share-link{background:var(--good)}
   .route-change-modal{position:fixed;inset:0;z-index:2000;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(3,19,67,.58)}
   .route-change-modal.is-open{display:flex}.route-change-dialog{width:min(460px,100%);background:#fff;border-radius:14px;padding:22px;box-shadow:0 18px 55px rgba(3,19,67,.3)}
   .route-change-dialog h3{margin:0 0 8px;font-family:var(--font-title);font-size:23px;color:var(--navy-dark)}.route-change-dialog p{margin:0;color:var(--grey-100);font-size:13px;line-height:1.5}
@@ -667,11 +667,22 @@
         }
       });
       orders.forEach(function(order,index){
-        updates['pedidos/'+order.id]={
-          destino:order.destino,referencia:order.referencia||null,cliente:order.cliente,telefono:order.telefono,horarioDesde:order.horarioDesde,
-          horarioHasta:order.horarioHasta,comentarios:order.comentarios||null,creado:createdAt,estado:'pendiente',
-          rutaId:currentRouteId,orden:index+1,estimadoLlegada:order.eta,tiempoServicioMinutos:Math.round(serviceSeconds()/60)
-        };
+        var orderPath='pedidos/'+order.id;
+        updates[orderPath+'/destino']=order.destino;
+        updates[orderPath+'/referencia']=order.referencia||null;
+        updates[orderPath+'/cliente']=order.cliente;
+        updates[orderPath+'/telefono']=order.telefono;
+        updates[orderPath+'/horarioDesde']=order.horarioDesde;
+        updates[orderPath+'/horarioHasta']=order.horarioHasta;
+        updates[orderPath+'/comentarios']=order.comentarios||null;
+        updates[orderPath+'/rutaId']=currentRouteId;
+        updates[orderPath+'/orden']=index+1;
+        updates[orderPath+'/estimadoLlegada']=order.eta;
+        updates[orderPath+'/tiempoServicioMinutos']=Math.round(serviceSeconds()/60);
+        if(previousRouteOrderIds.indexOf(order.id)===-1){
+          updates[orderPath+'/creado']=createdAt;
+          updates[orderPath+'/estado']='pendiente';
+        }
         routeOrders.push({pedidoId:order.id,orden:index+1,estimadoLlegada:order.eta,destino:order.destino});
       });
       updates['rutas/'+currentRouteId]={
@@ -757,21 +768,34 @@
   });
   document.getElementById('btn-cancel-date-change').addEventListener('click',closeDateChangeModal);
 
+  async function shareGeneratedLink(title,url){
+    var textToShare=title+'\n'+url;
+    if(navigator.share){
+      try{await navigator.share({title:title,text:title,url:url});return;}catch(error){
+        if(error&&error.name==='AbortError')return;
+      }
+    }
+    window.open('https://wa.me/?text='+encodeURIComponent(textToShare),'_blank','noopener');
+  }
+
   function showSavedLinks(){
     var base=window.location.href.replace(/generar-pedido\.html.*$/,'');
     var container=document.getElementById('saved-links');container.innerHTML='';
     var driverUrl=base+'chofer.html?ruta='+encodeURIComponent(currentRouteId);
     var driverRow=document.createElement('div');driverRow.className='saved-row driver-link';
-    driverRow.innerHTML='<b>Un solo enlace para el chofer · Ruta completa</b><div class="links"><a target="_blank" rel="noopener" href="'+driverUrl+'">Abrir ruta del chofer</a><button type="button" class="copy-route">Copiar link del chofer</button></div>';
+    driverRow.innerHTML='<b>Un solo enlace para el chofer · Ruta completa</b><div class="links"><a target="_blank" rel="noopener" href="'+driverUrl+'">Abrir ruta del chofer</a><button type="button" class="copy-route">Copiar link</button><button type="button" class="share-link">Compartir</button></div>';
     driverRow.querySelector('.copy-route').addEventListener('click',function(){
       var button=this;
-      navigator.clipboard.writeText(driverUrl).then(function(){button.textContent='Link copiado';setTimeout(function(){button.textContent='Copiar link del chofer';},1400);});
+      navigator.clipboard.writeText(driverUrl).then(function(){button.textContent='Link copiado';setTimeout(function(){button.textContent='Copiar link';},1400);});
     });
+    driverRow.querySelector('.share-link').addEventListener('click',function(){shareGeneratedLink('Ruta de entregas · Ganadera Panamericana',driverUrl);});
     container.appendChild(driverRow);
     orders.forEach(function(order,index){
       var row=document.createElement('div');row.className='saved-row';
+      var customerUrl=base+'cliente.html?id='+encodeURIComponent(order.id);
       row.innerHTML='<b>'+(index+1)+'. '+escapeHtml(order.id)+(order.referencia?' · Ref. '+escapeHtml(order.referencia):'')+' · '+escapeHtml(order.cliente)+'</b>'+
-        '<div class="links"><a target="_blank" rel="noopener" href="'+base+'cliente.html?id='+encodeURIComponent(order.id)+'">Abrir link individual del cliente</a></div>';
+        '<div class="links"><a target="_blank" rel="noopener" href="'+customerUrl+'">Abrir link del cliente</a><button type="button" class="share-link">Compartir</button></div>';
+      row.querySelector('.share-link').addEventListener('click',function(){shareGeneratedLink('Seguimiento de tu pedido · Ganadera Panamericana',customerUrl);});
       container.appendChild(row);
     });
     document.getElementById('saved-title').textContent='Ruta guardada: '+currentRouteId+' · enlaces listos para compartir';
