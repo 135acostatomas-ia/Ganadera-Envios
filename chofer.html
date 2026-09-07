@@ -591,7 +591,8 @@
       snapshot.forEach(function(child){
         var value=child.val()||{};
         if(value.publicadaChofer!==true||value.estadoRuta==='completada')return;
-        if(!selected||(value.estadoRuta==='en_curso'&&selected.estadoRuta!=='en_curso')||(value.actualizada||0)>(selected.actualizada||0)){selectedId=child.key;selected=value;}
+        var valueInProgress=value.estadoRuta==='en_curso',selectedInProgress=selected&&selected.estadoRuta==='en_curso';
+        if(!selected||(valueInProgress&&!selectedInProgress)||(valueInProgress===selectedInProgress&&(value.actualizada||0)>(selected.actualizada||0))){selectedId=child.key;selected=value;}
       });
       if(selectedId)driverSubscribeRoute(selectedId);else driverShowEmpty();
     });
