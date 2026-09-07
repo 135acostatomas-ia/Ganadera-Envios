@@ -103,6 +103,11 @@
   var vanMarker = null, destino = null, routeLine = null, lastRouteFetch = 0;
 
   if (configured){
+    db.ref('pedidos/' + orderId + '/referencia').once('value', function(snap){
+      var referencia=snap.val();
+      document.getElementById('order-id-label').textContent='pedido: '+orderId+(referencia?' · ref. '+referencia:'');
+    });
+
     db.ref('pedidos/' + orderId + '/destino').once('value', function(snap){
       destino = snap.val();
       if (destino){
