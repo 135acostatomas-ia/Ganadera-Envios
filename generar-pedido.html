@@ -722,7 +722,7 @@
     var button=document.getElementById('btn-publish-route');
     if(!button)return;
     var isToday=activeRouteDate===todayValue();
-    button.disabled=!currentRouteId||!isToday||currentRouteStatus==='completada';
+    button.disabled=!currentRouteId||!isToday||currentRouteStatus==='completada'||currentRouteStatus==='en_curso';
     if(currentRouteStatus==='completada')button.textContent='Ruta completada';
     else if(currentRouteStatus==='en_curso')button.textContent='Ruta en curso';
     else if(currentRoutePublished)button.textContent='Ruta disponible para el chofer';
