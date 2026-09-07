@@ -45,6 +45,8 @@
   .sig-actions{ margin-top:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
   button.ghost{ font-family:var(--font-base); font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; padding:8px 14px; border-radius:4px; border:1px solid var(--grey-100); background:transparent; color:var(--grey); cursor:pointer; }
   .delivered-badge{ display:inline-flex; align-items:center; gap:8px; padding:9px 14px; border-radius:6px; background:#e9f9ef; border:1px solid #3ddc84; color:#1a7a41; font-weight:700; font-size:12px; margin-top:10px; }
+  .delivery-locked{display:none;padding:24px 18px;text-align:center;border:1px solid #8dd5a7;border-radius:9px;background:#f3fbf6;color:#1a7a41}.delivery-locked strong{display:block;font-family:var(--font-title);font-size:21px;margin-bottom:6px}.delivery-locked span{font-size:12px;line-height:1.5}
+  .locked-action{grid-column:1/-1;text-align:center;border:1px solid #8dd5a7;border-radius:5px;background:#e9f9ef;color:#1a7a41;padding:8px;font-size:10px;font-weight:900;text-transform:uppercase}
   .back-route{display:none;margin:0 0 14px;text-decoration:none;color:var(--navy);font-size:12px;font-weight:900;}
   .app.route-mode{max-width:1020px;}
   .driver-route{display:none;background:var(--grey-500);padding:22px;}
@@ -115,7 +117,8 @@
 
   <div class="panel">
     <a class="back-route" id="back-to-route" href="#">← Volver a la ruta del día</a>
-    <div class="row">
+    <div class="delivery-locked" id="delivery-locked"><strong>Entrega finalizada</strong><span>Este envío ya fue confirmado y no puede volver a modificarse.</span></div>
+    <div class="row" id="delivery-stats">
       <div class="stat"><p class="stat-label">Estado</p><p class="stat-value small" id="rep-estado">Detenido</p></div>
       <div class="stat"><p class="stat-label">Distancia al destino</p><p class="stat-value small" id="rep-dist">—</p></div>
       <div class="stat"><p class="stat-label">Llegada estimada</p><p class="stat-value small" id="rep-eta">—</p></div>
@@ -186,16 +189,34 @@
   var myMarker = null, destMarker = null, routeLine = null;
   var destino = null;
   var lastRouteFetch = 0;
+  var orderLocked = false;
 
-  if (configured && !routeId){
-    db.ref('pedidos/' + orderId + '/destino').once('value', function(snap){
-      destino = snap.val();
-      if (destino){
-        destMarker = L.marker([destino.lat, destino.lng], {icon: pinIcon}).addTo(map);
-        document.getElementById('destino-hint').textContent = 'Destino: ' + destino.direccion;
-        map.setView([destino.lat, destino.lng], 13);
-      } else {
-        document.getElementById('destino-hint').textContent = 'Este pedido no tiene destino cargado.';
+  function lockDeliveredOrder(order){
+    if(orderLocked)return;
+    orderLocked=true;
+    if(sharing&&watchId!==null){navigator.geolocation.clearWatch(watchId);watchId=null;sharing=false;}
+    document.getElementById('map').style.display='none';
+    document.getElementById('delivery-stats').style.display='none';
+    document.querySelector('.actions').style.display='none';
+    document.getElementById('destino-hint').style.display='none';
+    document.getElementById('delivery-box').style.display='none';
+    document.getElementById('delivery-locked').style.display='block';
+    document.getElementById('btn-confirm-delivery').disabled=true;
+    canvas.style.pointerEvents='none';
+  }
+
+  if(configured&&!routeId){
+    db.ref('pedidos/'+orderId).on('value',function(snap){
+      var order=snap.val();
+      if(!order){document.getElementById('destino-hint').textContent='Este pedido no existe.';return;}
+      if(order.estado==='entregado'||(order.entrega&&order.entrega.confirmado)){lockDeliveredOrder(order);return;}
+      destino=order.destino||null;
+      if(destino&&!destMarker){
+        destMarker=L.marker([destino.lat,destino.lng],{icon:pinIcon}).addTo(map);
+        document.getElementById('destino-hint').textContent='Destino: '+destino.direccion;
+        map.setView([destino.lat,destino.lng],13);
+      }else if(!destino){
+        document.getElementById('destino-hint').textContent='Este pedido no tiene destino cargado.';
       }
     });
   }
@@ -221,7 +242,7 @@
     } catch(e){ /* silencioso: sigue mostrando el último valor conocido */ }
   }
 
-  var watchId = null, sharing = false;
+  var watchId = null, sharing = false, hasSharedLocation = false, lastSharedPosition = null;
 
   function toggleShare(){
     if (!configured){ document.getElementById('rep-status').innerHTML = '<span style="color:var(--red)">Configurá Firebase primero.</span>'; return; }
@@ -242,10 +263,16 @@
     document.getElementById('rep-status').innerHTML = 'Transmitiendo posición <b>en vivo</b>.';
 
     watchId = navigator.geolocation.watchPosition(function(pos){
-      var lat = pos.coords.latitude, lng = pos.coords.longitude;
-      db.ref('pedidos/' + orderId + '/posicion').set({ lat:lat, lng:lng, updatedAt: Date.now() });
-      if (!myMarker) { myMarker = L.marker([lat,lng], {icon: vanIcon}).addTo(map); }
-      else { myMarker.setLatLng([lat,lng]); }
+      var lat=pos.coords.latitude,lng=pos.coords.longitude;
+      lastSharedPosition={lat:lat,lng:lng,updatedAt:Date.now()};
+      db.ref('pedidos/'+orderId+'/posicion').set(lastSharedPosition).then(function(){
+        hasSharedLocation=true;
+        document.getElementById('rep-status').innerHTML='Ubicación compartida y transmitiendo <b>en vivo</b>.';
+      }).catch(function(error){
+        document.getElementById('rep-status').innerHTML='<span style="color:var(--red)">No se pudo compartir la ubicación: '+driverEscape(error.message)+'</span>';
+      });
+      if(!myMarker){myMarker=L.marker([lat,lng],{icon:vanIcon}).addTo(map);}
+      else{myMarker.setLatLng([lat,lng]);}
       map.panTo([lat,lng]);
       updateRoute([lat,lng]);
     }, function(err){
@@ -275,27 +302,41 @@
   document.getElementById('btn-clear-sig').addEventListener('click', function(){ ctx.clearRect(0,0,canvas.width,canvas.height); hasSignature=false; });
 
   document.getElementById('btn-confirm-delivery').addEventListener('click', async function(){
-    if (!configured){ document.getElementById('delivery-status').innerHTML = '<span style="color:var(--red)">Configurá Firebase primero.</span>'; return; }
-    if (!hasSignature){ document.getElementById('delivery-status').innerHTML = '<span style="color:var(--red)">Pedile al cliente que firme.</span>'; return; }
+    if(!configured){document.getElementById('delivery-status').innerHTML='<span style="color:var(--red)">Configurá Firebase primero.</span>';return;}
+    if(orderLocked){document.getElementById('delivery-status').innerHTML='<span style="color:var(--red)">Esta entrega ya fue confirmada.</span>';return;}
+    if(!hasSharedLocation||!lastSharedPosition){document.getElementById('delivery-status').innerHTML='<span style="color:var(--red)">Primero compartí tu ubicación y esperá la confirmación del GPS.</span>';return;}
+    if(!hasSignature){document.getElementById('delivery-status').innerHTML='<span style="color:var(--red)">Pedile al cliente que firme.</span>';return;}
     var button=this,confirmedAt=Date.now(),dataUrl=canvas.toDataURL('image/png');
     button.disabled=true;button.textContent='Guardando...';
     try{
-      var updates={};
-      updates['pedidos/'+orderId+'/entrega']={confirmado:true,firma:dataUrl,hora:confirmedAt};
-      updates['pedidos/'+orderId+'/estado']='entregado';
-      if(returnRouteId)updates['rutas/'+returnRouteId+'/actualizada']=confirmedAt;
-      await db.ref().update(updates);
+      var transactionResult=await new Promise(function(resolve,reject){
+        db.ref('pedidos/'+orderId).transaction(function(current){
+          if(!current||current.estado==='entregado'||(current.entrega&&current.entrega.confirmado))return;
+          current.estado='entregado';
+          current.entrega={confirmado:true,firma:dataUrl,hora:confirmedAt,ubicacion:lastSharedPosition};
+          return current;
+        },function(error,committed,snapshot){
+          if(error){reject(error);return;}
+          resolve({committed:committed,order:snapshot.val()});
+        },false);
+      });
+      if(!transactionResult.committed){
+        lockDeliveredOrder(transactionResult.order||{});
+        throw new Error('Esta entrega ya había sido confirmada.');
+      }
+      if(returnRouteId)await db.ref('rutas/'+returnRouteId+'/actualizada').set(confirmedAt);
       if(sharing&&watchId!==null){navigator.geolocation.clearWatch(watchId);watchId=null;sharing=false;}
       if(returnRouteId){
         document.getElementById('delivery-status').innerHTML='<b style="color:#1a7a41">Entrega confirmada. Volviendo a la ruta…</b>';
         setTimeout(function(){window.location.href='chofer.html?ruta='+encodeURIComponent(returnRouteId);},900);
       }else{
-        document.getElementById('delivery-status').innerHTML='<b style="color:#1a7a41">Entrega confirmada.</b>';
-        button.textContent='Entrega confirmada';
+        lockDeliveredOrder(transactionResult.order||{});
       }
     }catch(error){
-      document.getElementById('delivery-status').innerHTML='<span style="color:var(--red)">No se pudo confirmar: '+driverEscape(error.message)+'</span>';
-      button.disabled=false;button.textContent='Confirmar entrega';
+      if(!orderLocked){
+        document.getElementById('delivery-status').innerHTML='<span style="color:var(--red)">No se pudo confirmar: '+driverEscape(error.message)+'</span>';
+        button.disabled=false;button.textContent='Confirmar entrega';
+      }
     }
   });
 
@@ -419,7 +460,7 @@
       var manageUrl='chofer.html?id='+encodeURIComponent(order.id)+'&volverRuta='+encodeURIComponent(routeId);
       var navUrl='https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(order.destino.lat+','+order.destino.lng);
       var statusTag=delivered?'<span class="driver-tag eta">✓ Entregada</span>':'<span class="driver-tag eta">ETA '+driverClock(order.eta)+'</span>';
-      var actions=delivered?'<a class="route-link" href="'+manageUrl+'">Ver entrega</a>':'<button type="button" class="route-icon" data-action="up" title="Mover antes">↑</button><button type="button" class="route-icon" data-action="down" title="Mover después">↓</button><a class="nav-link" target="_blank" rel="noopener" href="'+navUrl+'">Navegar</a><a class="route-link" href="'+manageUrl+'">Gestionar entrega</a>';
+      var actions=delivered?'<span class="locked-action">✓ Entrega cerrada</span>':'<button type="button" class="route-icon" data-action="up" title="Mover antes">↑</button><button type="button" class="route-icon" data-action="down" title="Mover después">↓</button><a class="nav-link" target="_blank" rel="noopener" href="'+navUrl+'">Navegar</a><a class="route-link" href="'+manageUrl+'">Gestionar entrega</a>';
       card.innerHTML='<div class="driver-number">'+(delivered?'✓':pendingNumber)+'</div><div><h2>'+driverEscape(order.id)+' · '+driverEscape(order.cliente)+'</h2>'+
         '<div class="driver-address">'+driverEscape(order.destino.direccion)+'</div><div class="driver-details">'+(order.referencia?'<span class="driver-tag">Ref. '+driverEscape(order.referencia)+'</span>':'')+statusTag+
         '<span class="driver-tag">'+driverEscape(order.horarioDesde)+'–'+driverEscape(order.horarioHasta)+'</span>'+phone+'<span class="driver-tag">'+driverDuration(driverServiceSeconds())+' de entrega</span></div>'+comments+'</div>'+
@@ -469,25 +510,32 @@
     if(action==='down'&&index<pendingCount-1){var moved=driverOrders.splice(index,1)[0];driverOrders.splice(index+1,0,moved);}
     await driverCalculate(false);
   }
-  async function driverLoadRoute(){
+  var driverLoadVersion=0;
+  function driverLoadRoute(){
     if(!configured){document.getElementById('driver-route-status').textContent='Falta configurar Firebase.';return;}
-    try{
-      var snapshot=await db.ref('rutas/'+routeId).once('value');
-      driverRoute=snapshot.val();
-      if(!driverRoute)throw new Error('La ruta no existe o fue eliminada.');
-      var stops=Array.isArray(driverRoute.pedidos)?driverRoute.pedidos:Object.values(driverRoute.pedidos||{});
-      stops.sort(function(a,b){return (a.orden||0)-(b.orden||0);});
-      driverOrders=await Promise.all(stops.map(async function(stop){
-        var orderSnapshot=await db.ref('pedidos/'+stop.pedidoId).once('value'),value=orderSnapshot.val()||{};
-        return {id:stop.pedidoId,referencia:value.referencia||'',cliente:value.cliente||'',telefono:value.telefono||'',horarioDesde:value.horarioDesde||'',horarioHasta:value.horarioHasta||'',comentarios:value.comentarios||'',destino:value.destino||stop.destino,estado:value.estado||'pendiente',entregaHora:value.entrega&&value.entrega.hora||null,eta:value.estimadoLlegada||stop.estimadoLlegada||null};
-      }));
-      driverOrders=driverPendingOrders().concat(driverDeliveredOrders());
-      document.getElementById('driver-route-copy').textContent=(driverRoute.fecha||'')+' · salida '+(driverRoute.horaSalida||'08:00')+' · '+(driverRoute.tiempoServicioMinutos||10)+' min por entrega';
-      driverMap=L.map('driver-route-map',{attributionControl:false}).setView([-34.6037,-58.3816],11);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(driverMap);
-      driverMarkers=L.layerGroup().addTo(driverMap);
-      await driverCalculate(false);
-    }catch(error){document.getElementById('driver-route-status').textContent=error.message;}
+    db.ref('rutas/'+routeId).on('value',async function(snapshot){
+      var loadVersion=++driverLoadVersion;
+      try{
+        driverRoute=snapshot.val();
+        if(!driverRoute)throw new Error('La ruta no existe o fue eliminada.');
+        var stops=Array.isArray(driverRoute.pedidos)?driverRoute.pedidos:Object.values(driverRoute.pedidos||{});
+        stops.sort(function(a,b){return (a.orden||0)-(b.orden||0);});
+        var loadedOrders=await Promise.all(stops.map(async function(stop){
+          var orderSnapshot=await db.ref('pedidos/'+stop.pedidoId).once('value'),value=orderSnapshot.val()||{};
+          return {id:stop.pedidoId,referencia:value.referencia||'',cliente:value.cliente||'',telefono:value.telefono||'',horarioDesde:value.horarioDesde||'',horarioHasta:value.horarioHasta||'',comentarios:value.comentarios||'',destino:value.destino||stop.destino,estado:value.estado||'pendiente',entregaHora:value.entrega&&value.entrega.hora||null,eta:value.estimadoLlegada||stop.estimadoLlegada||null};
+        }));
+        if(loadVersion!==driverLoadVersion)return;
+        driverOrders=loadedOrders.filter(function(order){return order.estado!=='entregado';}).concat(loadedOrders.filter(function(order){return order.estado==='entregado';}));
+        document.getElementById('driver-route-copy').textContent=(driverRoute.fecha||'')+' · salida '+(driverRoute.horaSalida||'08:00')+' · '+(driverRoute.tiempoServicioMinutos||10)+' min por entrega';
+        if(!driverMap){
+          driverMap=L.map('driver-route-map',{attributionControl:false}).setView([-34.6037,-58.3816],11);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(driverMap);
+          driverMarkers=L.layerGroup().addTo(driverMap);
+        }
+        await driverCalculate(false);
+        document.getElementById('driver-route-status').textContent='Ruta sincronizada con los últimos cambios.';
+      }catch(error){document.getElementById('driver-route-status').textContent=error.message;}
+    });
   }
   document.getElementById('driver-optimize').addEventListener('click',function(){driverCalculate(true);});
   document.getElementById('driver-recalculate').addEventListener('click',function(){driverCalculate(false);});
