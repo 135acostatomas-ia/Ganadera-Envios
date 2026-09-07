@@ -737,6 +737,12 @@
     if(!window.confirm('¿Habilitar esta ruta para el chofer?\n\nAparecerá inmediatamente en el acceso directo de ambos celulares.'))return;
     var button=this;button.disabled=true;button.textContent='Habilitando...';
     try{
+      var routeSnapshot=await db.ref('rutas/'+currentRouteId).once('value');
+      if(!routeSnapshot.exists()){
+        document.getElementById('route-status').textContent='Restaurando la ruta antes de habilitarla...';
+        var restored=await saveCurrentRoute(document.getElementById('btn-save-route'));
+        if(!restored)throw new Error('No se pudo volver a guardar la ruta.');
+      }
       var result=await new Promise(function(resolve,reject){
         db.ref('rutas/'+currentRouteId).transaction(function(route){
           if(!route)return;
