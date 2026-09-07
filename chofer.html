@@ -85,6 +85,21 @@
     .topbar{ padding:10px 14px; }
     .driver-route{padding:16px;}.route-heading{display:block}.route-summary{grid-template-columns:1fr 1fr}.route-summary .stat:last-child{grid-column:1/-1}.driver-card{grid-template-columns:36px minmax(0,1fr)}.driver-card-actions{grid-column:2;display:flex;flex-wrap:wrap}.route-link,.nav-link{grid-column:auto;flex:1;min-width:120px}.route-toolbar button{min-width:125px}#driver-route-map{height:280px;}
   }
+
+  body.driver-map-expanded{overflow:hidden;}
+  #map.map-expanded,#driver-route-map.map-expanded{
+    position:fixed!important;inset:0!important;width:100%!important;
+    height:100vh!important;height:100dvh!important;margin:0!important;
+    border:0!important;border-radius:0!important;z-index:10000!important;
+  }
+  .map-size-control button{
+    display:block;min-height:44px;padding:10px 12px;border:0;border-radius:5px;
+    background:#fff;color:#061c5d;font:900 13px 'Lato',sans-serif;cursor:pointer;
+  }
+  .map-size-control button:focus-visible{outline:3px solid #1F6ED4;outline-offset:2px;}
+  .map-expanded .leaflet-top{top:env(safe-area-inset-top,0px);}
+  .map-expanded .leaflet-right{right:env(safe-area-inset-right,0px);}
+  .map-expanded .leaflet-left{left:env(safe-area-inset-left,0px);}
 </style>
 </head>
 <body>
@@ -196,7 +211,54 @@
   var db = null;
   if (configured) { firebase.initializeApp(firebaseConfig); db = firebase.database(); document.getElementById('conn-dot').classList.add('on'); }
 
+
+  // Expand the existing map to the app viewport, including iPhone standalone mode.
+  // Keep the same Leaflet instance so GPS tracking, markers and route updates continue.
+  var expandedDriverMap=null;
+  function addMapSizeControl(mapInstance){
+    var container=mapInstance.getContainer(),button,scrollBefore=0;
+    function resizeMap(){mapInstance.invalidateSize({pan:false});}
+    function closeMap(){
+      if(expandedDriverMap!==closeMap)return;
+      expandedDriverMap=null;
+      container.classList.remove('map-expanded');
+      document.body.classList.remove('driver-map-expanded');
+      button.textContent='⛶ Ampliar mapa';
+      button.setAttribute('aria-expanded','false');
+      window.removeEventListener('resize',resizeMap);
+      document.removeEventListener('keydown',onKey);
+      resizeMap();window.scrollTo(0,scrollBefore);button.focus({preventScroll:true});
+    }
+    function onKey(event){if(event.key==='Escape'){event.preventDefault();closeMap();}}
+    var control=L.control({position:'topright'});
+    control.onAdd=function(){
+      var wrapper=L.DomUtil.create('div','leaflet-bar map-size-control');
+      button=L.DomUtil.create('button','',wrapper);
+      button.type='button';button.textContent='⛶ Ampliar mapa';
+      button.setAttribute('aria-controls',container.id);
+      button.setAttribute('aria-expanded','false');
+      L.DomEvent.disableClickPropagation(wrapper);
+      L.DomEvent.disableScrollPropagation(wrapper);
+      button.addEventListener('click',function(){
+        if(expandedDriverMap===closeMap){closeMap();return;}
+        if(expandedDriverMap)expandedDriverMap();
+        scrollBefore=window.scrollY;
+        expandedDriverMap=closeMap;
+        container.classList.add('map-expanded');
+        document.body.classList.add('driver-map-expanded');
+        button.textContent='✕ Volver';
+        button.setAttribute('aria-expanded','true');
+        window.addEventListener('resize',resizeMap);
+        document.addEventListener('keydown',onKey);
+        resizeMap();button.focus({preventScroll:true});
+      });
+      return wrapper;
+    };
+    control.addTo(mapInstance);
+  }
+
   var map = L.map('map', {zoomControl:true, attributionControl:false}).setView([-34.6037,-58.3816], 13);
+  addMapSizeControl(map);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19}).addTo(map);
 
   var vanIcon = L.divIcon({ className:'', html:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="1" y="1" width="22" height="22" rx="6" fill="#1F6ED4"/><path d="M6 15.5V9.5C6 8.4 6.9 7.5 8 7.5H13.5V15.5" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/><path d="M13.5 10.5H16.3L18.5 12.7V15.5H13.5" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/><circle cx="9" cy="16" r="1.4" fill="#fff"/><circle cx="16" cy="16" r="1.4" fill="#fff"/></svg>', iconSize:[26,26] });
@@ -210,6 +272,7 @@
   function lockDeliveredOrder(order){
     if(orderLocked)return;
     orderLocked=true;
+    if(expandedDriverMap)expandedDriverMap();
     if(sharing&&watchId!==null){navigator.geolocation.clearWatch(watchId);watchId=null;sharing=false;}
     document.getElementById('map').style.display='none';
     document.getElementById('delivery-stats').style.display='none';
@@ -538,6 +601,7 @@
   function driverShowEmpty(){
     driverRoute=null;driverOrders=[];
     document.getElementById('driver-home-state').style.display='block';
+    if(expandedDriverMap)expandedDriverMap();
     document.getElementById('driver-active-content').style.display='none';
     document.getElementById('driver-route-copy').textContent='Esperando una ruta habilitada para hoy.';
   }
@@ -573,6 +637,7 @@
         document.getElementById('driver-route-copy').textContent=(driverRoute.fecha||'')+' · salida '+(driverRoute.horaSalida||'08:00')+' · '+(driverRoute.tiempoServicioMinutos||10)+' min por entrega';
         if(!driverMap){
           driverMap=L.map('driver-route-map',{attributionControl:false}).setView([-34.6037,-58.3816],11);
+          addMapSizeControl(driverMap);
           L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(driverMap);
           driverMarkers=L.layerGroup().addTo(driverMap);
         }else{setTimeout(function(){driverMap.invalidateSize();},0);}
