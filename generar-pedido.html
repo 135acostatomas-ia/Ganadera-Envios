@@ -654,14 +654,14 @@
           latestSavedRoute=value;latestSavedRouteId=child.key;
         }
       });
-      var routeWillBeReplaced=currentRouteId?savedCurrentRoute:latestSavedRoute;
+      var routeWillBeReplaced=savedCurrentRoute||latestSavedRoute;
       if(routeWillBeReplaced){
         var confirmation='Ya existe una ruta guardada para el '+formatRouteDate(routeDate)+'.\n\n¿Querés reemplazarla con los datos que aparecen ahora?';
         if(!window.confirm(confirmation)){
           document.getElementById('route-status').textContent='No se hicieron cambios en la ruta guardada.';
           return false;
         }
-        if(!currentRouteId){
+        if(!savedCurrentRoute){
           currentRouteId=latestSavedRouteId;
           var previousStops=Array.isArray(routeWillBeReplaced.pedidos)?routeWillBeReplaced.pedidos:Object.values(routeWillBeReplaced.pedidos||{});
           previousRouteOrderIds=previousStops.map(function(stop){return stop.pedidoId;});
