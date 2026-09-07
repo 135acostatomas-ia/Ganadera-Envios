@@ -90,7 +90,7 @@
         <div class="status" id="address-status"></div><div class="results" id="address-results"></div><div class="picked" id="address-picked"></div>
       </div>
       <div class="grid-2">
-        <div class="field"><label for="order-id">N° de pedido</label><input type="text" id="order-id"></div>
+        <div class="field"><label for="order-id">N° de pedido</label><input type="text" id="order-id" placeholder="Se asigna automáticamente" readonly aria-readonly="true"></div>
         <div class="field"><label for="reference-number">N° de referencia</label><input type="text" inputmode="numeric" id="reference-number" placeholder="Últimos números del ticket"></div>
       </div>
       <div class="field"><label for="customer-name">Nombre del cliente</label><input type="text" id="customer-name"></div>
@@ -216,8 +216,21 @@
     document.getElementById(prefix+'-minute').value=parts[1]||'00';
   }
 
-  function newOrderId(){ return 'pedido-' + Math.floor(1000 + Math.random() * 9000); }
-  document.getElementById('order-id').value = newOrderId();
+  function formatOrderId(number){ return 'ENV-' + String(number).padStart(6,'0'); }
+  function reserveNextOrderId(){
+    return new Promise(function(resolve,reject){
+      if(!configured||!db){reject(new Error('Firebase no está configurado.'));return;}
+      db.ref('contadores/envios').transaction(
+        function(current){return (Number(current)||0)+1;},
+        function(error,committed,snapshot){
+          if(error){reject(error);return;}
+          if(!committed){reject(new Error('No se pudo reservar el número de pedido.'));return;}
+          resolve(formatOrderId(snapshot.val()));
+        },
+        false
+      );
+    });
+  }
 
   function escapeHtml(value){
     return String(value == null ? '' : value).replace(/[&<>"']/g, function(char){
@@ -330,7 +343,7 @@
   function clearOrderForm(){
     ['reference-number','customer-name','customer-phone','comments','address'].forEach(function(id){ document.getElementById(id).value = ''; });
     setQuarterTime('window-from','');setQuarterTime('window-to','');
-    document.getElementById('order-id').value = newOrderId();
+    document.getElementById('order-id').value = '';
     document.getElementById('address-picked').style.display = 'none';
     document.getElementById('address-results').style.display = 'none';
     document.getElementById('address-status').textContent = '';
@@ -341,13 +354,27 @@
   }
 
   document.getElementById('btn-add-order').addEventListener('click', async function(){
-    var order = readOrderForm();
-    var error = validateOrder(order);
-    if (error) { alert(error); return; }
-    if (editIndex == null) orders.push(order); else orders[editIndex] = Object.assign(orders[editIndex],order);
-    isRouteDirty = true;
+    var button=this,isNewOrder=editIndex==null;
+    var order=readOrderForm();
+    if(isNewOrder)order.id='pendiente';
+    var error=validateOrder(order);
+    if(error){alert(error);return;}
+    if(isNewOrder){
+      button.disabled=true;button.textContent='Asignando N° de pedido...';
+      try{
+        order.id=await reserveNextOrderId();
+        document.getElementById('order-id').value=order.id;
+      }catch(counterError){
+        alert('No se pudo generar el número de pedido: '+counterError.message);
+        button.disabled=false;button.textContent='Agregar pedido a la ruta';
+        return;
+      }
+    }
+    if(isNewOrder)orders.push(order);else orders[editIndex]=Object.assign(orders[editIndex],order);
+    isRouteDirty=true;
     clearOrderForm();
-    document.getElementById('saved-route').style.display = 'none';
+    document.getElementById('saved-route').style.display='none';
+    button.disabled=false;
     await refreshRoute(false);
   });
   document.getElementById('btn-cancel-edit').addEventListener('click', clearOrderForm);
