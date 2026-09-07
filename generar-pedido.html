@@ -43,6 +43,10 @@
   .stop-list{display:flex;flex-direction:column;gap:9px}.stop{display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:10px;align-items:start;background:#fff;border:1px solid var(--grey-300);border-radius:9px;padding:11px}.stop-number{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:var(--navy);color:#fff;font-family:var(--font-title);font-size:16px;font-weight:900}
   .stop-title{font-size:13px;font-weight:900;color:var(--navy-dark);margin-bottom:3px}.stop-address{font-size:11.5px;line-height:1.35;color:var(--grey-100)}.stop-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}.tag{font-size:9.5px;font-weight:700;color:var(--navy);background:#eef3fb;border-radius:999px;padding:4px 7px}.tag.eta{background:var(--good-bg);color:var(--good)}.tag.late{background:#fdece2;color:#b42318}.stop-actions{display:grid;grid-template-columns:1fr 1fr;gap:5px}.icon-btn{width:30px;height:28px;border:1px solid var(--grey-200);border-radius:5px;background:#fff;color:var(--navy);font-weight:900}.icon-btn:hover{background:#eef4fd}.icon-btn.remove{color:#b42318}
   .saved{display:none;margin-top:16px;background:var(--good-bg);border:1px solid #8dd5a7;border-radius:9px;padding:14px}.saved-title{font-size:12px;font-weight:900;color:var(--good);margin-bottom:10px}.saved-row{background:#fff;border-radius:6px;padding:9px;margin-top:7px}.saved-row b{font-size:11px;color:var(--navy-dark)}.links{display:flex;gap:8px;margin-top:6px}.links a{font-size:10.5px;color:var(--blue);font-weight:700;text-decoration:none}.driver-link{border:1px solid #8dd5a7;padding:12px}.driver-link .links{align-items:center;flex-wrap:wrap}.copy-route{border:0;border-radius:5px;background:var(--navy);color:#fff;padding:8px 10px;font-size:10px;font-weight:900;text-transform:uppercase;cursor:pointer}
+  .route-change-modal{position:fixed;inset:0;z-index:2000;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(3,19,67,.58)}
+  .route-change-modal.is-open{display:flex}.route-change-dialog{width:min(460px,100%);background:#fff;border-radius:14px;padding:22px;box-shadow:0 18px 55px rgba(3,19,67,.3)}
+  .route-change-dialog h3{margin:0 0 8px;font-family:var(--font-title);font-size:23px;color:var(--navy-dark)}.route-change-dialog p{margin:0;color:var(--grey-100);font-size:13px;line-height:1.5}
+  .route-change-date{font-weight:900;color:var(--navy)}.route-change-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px}.route-change-actions .cancel-date-change{grid-column:1/-1}
   .marker-number{display:flex;align-items:center;justify-content:center;width:28px;height:28px;background:var(--navy);color:#fff;border:2px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(3,19,67,.3);font:900 13px var(--font-base)}.marker-origin{background:var(--red)}
   @media(max-width:900px){body{padding:12px}.workspace{grid-template-columns:1fr}.form-column{border-right:0;border-bottom:1px solid var(--grey-300)}}
   @media(max-width:560px){body{padding:0}.app{border-radius:0;min-height:100vh}.topbar{padding:10px 14px}.brand-symbol{width:38px;height:38px}.brand-wordmark{width:145px}.topbar-copy{display:none}.form-column,.route-column{padding:18px}.grid-3{grid-template-columns:1fr 1fr}.summary{grid-template-columns:1fr 1fr}.summary-item:last-child{grid-column:1/-1}.stop{grid-template-columns:34px minmax(0,1fr)}.stop-actions{grid-column:2;display:flex}}
@@ -124,6 +128,18 @@
   </main>
 </div>
 
+<div class="route-change-modal" id="route-change-modal" role="dialog" aria-modal="true" aria-labelledby="route-change-title">
+  <div class="route-change-dialog">
+    <h3 id="route-change-title">¿Qué hacemos con esta ruta?</h3>
+    <p>Estás por cambiar del <span class="route-change-date" id="route-change-from"></span> al <span class="route-change-date" id="route-change-to"></span>. La ruta actual seguirá perteneciendo a su fecha original.</p>
+    <div class="route-change-actions">
+      <button class="primary" type="button" id="btn-save-date-change">Guardar ruta</button>
+      <button class="secondary danger" type="button" id="btn-discard-date-change">Descartar cambios</button>
+      <button class="secondary cancel-date-change" type="button" id="btn-cancel-date-change">Cancelar y quedarse en el día</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -150,6 +166,9 @@
   var editIndex = null;
   var currentRouteId = null;
   var previousRouteOrderIds = [];
+  var activeRouteDate = null;
+  var pendingRouteDate = null;
+  var isRouteDirty = false;
   var routeLayer = null;
   var markerLayer = L.layerGroup();
   var map = L.map('route-map', {attributionControl:false}).setView([-34.6037,-58.3816], 11);
@@ -162,6 +181,7 @@
     return new Date(now.getTime() - offset).toISOString().slice(0,10);
   }
   document.getElementById('route-date').value = todayValue();
+  activeRouteDate = document.getElementById('route-date').value;
 
   function populateHourSelect(id){
     var select=document.getElementById(id),empty=document.createElement('option');
@@ -311,6 +331,7 @@
     var error = validateOrder(order);
     if (error) { alert(error); return; }
     if (editIndex == null) orders.push(order); else orders[editIndex] = Object.assign(orders[editIndex],order);
+    isRouteDirty = true;
     clearOrderForm();
     document.getElementById('saved-route').style.display = 'none';
     await refreshRoute(false);
@@ -444,9 +465,9 @@
   }
 
   async function handleStopAction(index,action){
-    if(action==='up'&&index>0){var item=orders.splice(index,1)[0];orders.splice(index-1,0,item);await refreshRoute(false);}
-    if(action==='down'&&index<orders.length-1){var moved=orders.splice(index,1)[0];orders.splice(index+1,0,moved);await refreshRoute(false);}
-    if(action==='remove'){orders.splice(index,1);if(editIndex===index)clearOrderForm();await refreshRoute(false);}
+    if(action==='up'&&index>0){var item=orders.splice(index,1)[0];orders.splice(index-1,0,item);isRouteDirty=true;await refreshRoute(false);}
+    if(action==='down'&&index<orders.length-1){var moved=orders.splice(index,1)[0];orders.splice(index+1,0,moved);isRouteDirty=true;await refreshRoute(false);}
+    if(action==='remove'){orders.splice(index,1);isRouteDirty=true;if(editIndex===index)clearOrderForm();await refreshRoute(false);}
     if(action==='edit'){
       var order=orders[index];editIndex=index;selectedDestination=order.destino;
       document.getElementById('order-id').value=order.id;document.getElementById('customer-name').value=order.cliente;
@@ -493,16 +514,31 @@
     renderOrders();renderMap();await drawRoute(points);
   }
 
-  document.getElementById('btn-optimize').addEventListener('click',function(){refreshRoute(true);});
-  document.getElementById('btn-recalculate').addEventListener('click',function(){refreshRoute(false);});
-  ['route-date','departure-time','service-minutes'].forEach(function(id){
-    document.getElementById(id).addEventListener('change',function(){refreshRoute(false);});
+  document.getElementById('btn-optimize').addEventListener('click',function(){isRouteDirty=true;refreshRoute(true);});
+  document.getElementById('btn-recalculate').addEventListener('click',function(){isRouteDirty=true;refreshRoute(false);});
+  ['departure-time','service-minutes'].forEach(function(id){
+    document.getElementById(id).addEventListener('change',function(){isRouteDirty=true;refreshRoute(false);});
   });
 
-  document.getElementById('btn-load-route').addEventListener('click',async function(){
-    if(!configured){alert('Configurá Firebase primero.');return;}
-    var button=this,date=document.getElementById('route-date').value||todayValue();
-    button.disabled=true;button.textContent='Cargando...';
+  function resetRouteWorkspace(){
+    orders=[];currentRouteId=null;previousRouteOrderIds=[];editIndex=null;selectedDestination=null;isRouteDirty=false;
+    origin=Object.assign({},DEFAULT_ORIGIN);
+    document.getElementById('departure-time').value='10:00';
+    document.getElementById('service-minutes').value='15';
+    document.getElementById('origin-address').value=DEFAULT_ORIGIN.direccion;
+    var originPicked=document.getElementById('origin-picked');
+    originPicked.textContent='Salida predeterminada: '+DEFAULT_ORIGIN.direccion;originPicked.style.display='block';
+    document.getElementById('saved-route').style.display='none';
+    document.getElementById('btn-save-route').textContent='Guardar ruta';
+    clearOrderForm();renderOrders();renderMap();
+    document.getElementById('summary-distance').textContent='—';
+    document.getElementById('summary-finish').textContent='—';
+    document.getElementById('route-status').textContent='';
+    if(routeLayer){map.removeLayer(routeLayer);routeLayer=null;}
+  }
+
+  async function loadRouteForDate(date,showMissingAlert){
+    if(!configured){alert('Configurá Firebase primero.');return false;}
     try{
       var snapshot=await db.ref('rutas').orderByChild('fecha').equalTo(date).once('value');
       var selectedId=null,selectedRoute=null;
@@ -510,7 +546,11 @@
         var value=child.val();
         if(!selectedRoute||(value.actualizada||0)>(selectedRoute.actualizada||0)){selectedId=child.key;selectedRoute=value;}
       });
-      if(!selectedRoute){alert('No hay una ruta guardada para esta fecha.');return;}
+      if(!selectedRoute){
+        if(showMissingAlert)alert('No hay una ruta guardada para esta fecha.');
+        document.getElementById('route-status').textContent='No hay una ruta guardada para este día. Podés crear una nueva.';
+        return false;
+      }
       var routeStops=Array.isArray(selectedRoute.pedidos)?selectedRoute.pedidos:Object.values(selectedRoute.pedidos||{});
       routeStops.sort(function(a,b){return (a.orden||0)-(b.orden||0);});
       var loaded=await Promise.all(routeStops.map(async function(stop){
@@ -530,19 +570,29 @@
       }
       document.getElementById('saved-route').style.display='none';
       await refreshRoute(false);
+      isRouteDirty=false;
       document.getElementById('route-status').textContent='Ruta cargada. Podés editarla y volver a guardarla.';
       document.getElementById('btn-save-route').textContent='Actualizar ruta';
-    }catch(error){alert('No se pudo cargar la ruta: '+error.message);}
+      return true;
+    }catch(error){alert('No se pudo cargar la ruta: '+error.message);return false;}
+  }
+
+  document.getElementById('btn-load-route').addEventListener('click',async function(){
+    var button=this,date=document.getElementById('route-date').value||todayValue();
+    button.disabled=true;button.textContent='Cargando...';
+    try{await loadRouteForDate(date,true);}
     finally{button.disabled=false;button.textContent='Cargar ruta del día';}
   });
 
-  document.getElementById('btn-save-route').addEventListener('click',async function(){
-    if(!configured){alert('Configurá Firebase primero.');return;}
-    if(!orders.length){alert('Agregá al menos un pedido.');return;}
+  async function saveCurrentRoute(button){
+    if(!configured){alert('Configurá Firebase primero.');return false;}
+    if(!orders.length){alert('Agregá al menos un pedido.');return false;}
     await refreshRoute(false);
-    var button=this;button.disabled=true;button.textContent='Guardando...';
+    if(button){button.disabled=true;button.textContent='Guardando...';}
     try{
-      if(!currentRouteId)currentRouteId='ruta-'+(document.getElementById('route-date').value||todayValue())+'-'+Math.floor(1000+Math.random()*9000);
+      var routeDate=activeRouteDate||document.getElementById('route-date').value||todayValue();
+      document.getElementById('route-date').value=routeDate;
+      if(!currentRouteId)currentRouteId='ruta-'+routeDate+'-'+Math.floor(1000+Math.random()*9000);
       var createdAt=Date.now(),updates={},routeOrders=[];
       previousRouteOrderIds.forEach(function(id){
         if(!orders.some(function(order){return order.id===id;})){
@@ -558,14 +608,61 @@
         routeOrders.push({pedidoId:order.id,orden:index+1,estimadoLlegada:order.eta,destino:order.destino});
       });
       updates['rutas/'+currentRouteId]={
-        fecha:document.getElementById('route-date').value||todayValue(),horaSalida:document.getElementById('departure-time').value||'10:00',
+        fecha:routeDate,horaSalida:document.getElementById('departure-time').value||'10:00',
         origen:origin||null,tiempoServicioMinutos:Math.round(serviceSeconds()/60),pedidos:routeOrders,actualizada:createdAt
       };
-      await db.ref().update(updates);previousRouteOrderIds=orders.map(function(order){return order.id;});showSavedLinks();
+      await db.ref().update(updates);
+      previousRouteOrderIds=orders.map(function(order){return order.id;});
+      isRouteDirty=false;showSavedLinks();
       document.getElementById('route-status').textContent='Ruta guardada correctamente en Firebase.';
-    }catch(error){alert('No se pudo guardar la ruta: '+error.message);}
-    finally{button.disabled=false;button.textContent='Actualizar ruta';}
+      return true;
+    }catch(error){alert('No se pudo guardar la ruta: '+error.message);return false;}
+    finally{if(button){button.disabled=false;button.textContent='Actualizar ruta';}}
+  }
+
+  document.getElementById('btn-save-route').addEventListener('click',function(){saveCurrentRoute(this);});
+
+  function formatRouteDate(value){
+    if(!value)return '';
+    return new Date(value+'T12:00:00').toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  }
+  function openDateChangeModal(nextDate){
+    pendingRouteDate=nextDate;
+    document.getElementById('route-change-from').textContent=formatRouteDate(activeRouteDate);
+    document.getElementById('route-change-to').textContent=formatRouteDate(nextDate);
+    document.getElementById('route-change-modal').classList.add('is-open');
+  }
+  function closeDateChangeModal(){
+    pendingRouteDate=null;
+    document.getElementById('route-change-modal').classList.remove('is-open');
+  }
+  async function switchRouteDate(nextDate){
+    closeDateChangeModal();
+    resetRouteWorkspace();
+    activeRouteDate=nextDate;
+    document.getElementById('route-date').value=nextDate;
+    await loadRouteForDate(nextDate,false);
+  }
+
+  document.getElementById('route-date').addEventListener('change',function(){
+    var nextDate=this.value||todayValue();
+    this.value=activeRouteDate;
+    if(nextDate===activeRouteDate)return;
+    if(orders.length||currentRouteId||isRouteDirty)openDateChangeModal(nextDate);
+    else switchRouteDate(nextDate);
   });
+  document.getElementById('btn-save-date-change').addEventListener('click',async function(){
+    var nextDate=pendingRouteDate,button=this;
+    button.disabled=true;
+    var saved=await saveCurrentRoute(document.getElementById('btn-save-route'));
+    button.disabled=false;
+    if(saved&&nextDate)await switchRouteDate(nextDate);
+  });
+  document.getElementById('btn-discard-date-change').addEventListener('click',function(){
+    var nextDate=pendingRouteDate;
+    if(nextDate)switchRouteDate(nextDate);
+  });
+  document.getElementById('btn-cancel-date-change').addEventListener('click',closeDateChangeModal);
 
   function showSavedLinks(){
     var base=window.location.href.replace(/generar-pedido\.html.*$/,'');
