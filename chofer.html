@@ -421,7 +421,7 @@
       var statusTag=delivered?'<span class="driver-tag eta">✓ Entregada</span>':'<span class="driver-tag eta">ETA '+driverClock(order.eta)+'</span>';
       var actions=delivered?'<a class="route-link" href="'+manageUrl+'">Ver entrega</a>':'<button type="button" class="route-icon" data-action="up" title="Mover antes">↑</button><button type="button" class="route-icon" data-action="down" title="Mover después">↓</button><a class="nav-link" target="_blank" rel="noopener" href="'+navUrl+'">Navegar</a><a class="route-link" href="'+manageUrl+'">Gestionar entrega</a>';
       card.innerHTML='<div class="driver-number">'+(delivered?'✓':pendingNumber)+'</div><div><h2>'+driverEscape(order.id)+' · '+driverEscape(order.cliente)+'</h2>'+
-        '<div class="driver-address">'+driverEscape(order.destino.direccion)+'</div><div class="driver-details">'+statusTag+
+        '<div class="driver-address">'+driverEscape(order.destino.direccion)+'</div><div class="driver-details">'+(order.referencia?'<span class="driver-tag">Ref. '+driverEscape(order.referencia)+'</span>':'')+statusTag+
         '<span class="driver-tag">'+driverEscape(order.horarioDesde)+'–'+driverEscape(order.horarioHasta)+'</span>'+phone+'<span class="driver-tag">'+driverDuration(driverServiceSeconds())+' de entrega</span></div>'+comments+'</div>'+
         '<div class="driver-card-actions">'+actions+'</div>';
       card.querySelectorAll('[data-action]').forEach(function(button){
@@ -479,7 +479,7 @@
       stops.sort(function(a,b){return (a.orden||0)-(b.orden||0);});
       driverOrders=await Promise.all(stops.map(async function(stop){
         var orderSnapshot=await db.ref('pedidos/'+stop.pedidoId).once('value'),value=orderSnapshot.val()||{};
-        return {id:stop.pedidoId,cliente:value.cliente||'',telefono:value.telefono||'',horarioDesde:value.horarioDesde||'',horarioHasta:value.horarioHasta||'',comentarios:value.comentarios||'',destino:value.destino||stop.destino,estado:value.estado||'pendiente',entregaHora:value.entrega&&value.entrega.hora||null,eta:value.estimadoLlegada||stop.estimadoLlegada||null};
+        return {id:stop.pedidoId,referencia:value.referencia||'',cliente:value.cliente||'',telefono:value.telefono||'',horarioDesde:value.horarioDesde||'',horarioHasta:value.horarioHasta||'',comentarios:value.comentarios||'',destino:value.destino||stop.destino,estado:value.estado||'pendiente',entregaHora:value.entrega&&value.entrega.hora||null,eta:value.estimadoLlegada||stop.estimadoLlegada||null};
       }));
       driverOrders=driverPendingOrders().concat(driverDeliveredOrders());
       document.getElementById('driver-route-copy').textContent=(driverRoute.fecha||'')+' · salida '+(driverRoute.horaSalida||'08:00')+' · '+(driverRoute.tiempoServicioMinutos||10)+' min por entrega';
