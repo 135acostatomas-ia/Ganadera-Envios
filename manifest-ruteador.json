@@ -1,0 +1,20 @@
+{
+  "id": "/generar-pedido.html",
+  "name": "Ruteador Ganadera",
+  "short_name": "Ruteador Ganadera",
+  "description": "Coordinación de rutas y entregas de Ganadera Panamericana",
+  "lang": "es-AR",
+  "start_url": "/generar-pedido.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f4f7fc",
+  "theme_color": "#061c5d",
+  "icons": [
+    {
+      "src": "/assets/ganadera-logo.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
