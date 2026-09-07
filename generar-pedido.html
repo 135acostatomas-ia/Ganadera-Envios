@@ -731,13 +731,16 @@
 
   document.getElementById('btn-publish-route').addEventListener('click',async function(){
     if(!currentRouteId){alert('Primero guardá la ruta.');return;}
-    if(activeRouteDate!==todayValue()){alert('Solo podés habilitar para el chofer una ruta correspondiente a hoy.');return;}
+    var routeDateToPublish=activeRouteDate;
+    var localToday=todayValue();
+    if(routeDateToPublish!==localToday){alert('Solo podés habilitar para el chofer una ruta correspondiente a hoy.');return;}
     if(!window.confirm('¿Habilitar esta ruta para el chofer?\n\nAparecerá inmediatamente en el acceso directo de ambos celulares.'))return;
     var button=this;button.disabled=true;button.textContent='Habilitando...';
     try{
       var result=await new Promise(function(resolve,reject){
         db.ref('rutas/'+currentRouteId).transaction(function(route){
-          if(!route||route.fecha!==todayValue())return;
+          if(!route)return;
+          route.fecha=routeDateToPublish;
           route.publicadaChofer=true;
           route.publicadaEn=Date.now();
           if(route.estadoRuta!=='en_curso')route.estadoRuta='disponible';
@@ -747,7 +750,7 @@
           resolve({committed:committed,route:snapshot.val()});
         },false);
       });
-      if(!result.committed)throw new Error('La ruta no corresponde al día de hoy.');
+      if(!result.committed)throw new Error('La ruta guardada ya no existe. Volvé a guardarla e intentá nuevamente.');
       currentRoutePublished=true;currentRouteStatus=result.route.estadoRuta||'disponible';
       updatePublishButton();
       document.getElementById('route-status').textContent='La ruta ya está disponible para el chofer.';
