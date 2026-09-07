@@ -745,7 +745,9 @@
       }
       var result=await new Promise(function(resolve,reject){
         db.ref('rutas/'+currentRouteId).transaction(function(route){
-          if(!route)return;
+          // A cold Firebase cache may initially return null even for an existing route.
+          // Returning null lets the server compare and retry; undefined aborts locally.
+          if(route===null)return null;
           route.fecha=routeDateToPublish;
           route.publicadaChofer=true;
           route.publicadaEn=Date.now();
@@ -756,7 +758,7 @@
           resolve({committed:committed,route:snapshot.val()});
         },false);
       });
-      if(!result.committed)throw new Error('La ruta guardada ya no existe. Volvé a guardarla e intentá nuevamente.');
+      if(!result.committed||!result.route)throw new Error('La ruta guardada ya no existe. Volvé a guardarla e intentá nuevamente.');
       currentRoutePublished=true;currentRouteStatus=result.route.estadoRuta||'disponible';
       updatePublishButton();
       document.getElementById('route-status').textContent='La ruta ya está disponible para el chofer.';
