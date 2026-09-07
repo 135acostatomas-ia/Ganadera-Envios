@@ -38,7 +38,7 @@
   .primary{border:0;border-radius:7px;background:var(--blue);color:#fff;padding:12px 16px;font-size:11.5px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;box-shadow:0 3px 8px rgba(31,110,212,.18)}.primary:hover{background:var(--blue-dark)}.primary:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
   .primary.full{width:100%}.secondary{border:1px solid var(--grey-200);border-radius:7px;background:#fff;color:var(--navy);padding:10px 13px;font-size:10.5px;font-weight:900;letter-spacing:.04em;text-transform:uppercase}.secondary:hover{background:#eef4fd;border-color:var(--blue)}
   .danger{color:#b42318}.edit-note{display:none;background:var(--warning-bg);border:1px solid #f0cc85;color:var(--warning);padding:9px 10px;border-radius:6px;font-size:11.5px;font-weight:700;margin-bottom:12px}
-  .route-toolbar{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}.toolbar-section{background:#fff;border:1px solid var(--grey-300);border-radius:10px;padding:11px}.toolbar-label{display:block;margin:0 0 8px;font-size:9px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--grey-100)}.toolbar-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}.toolbar-actions button{min-height:42px;padding:9px 10px}.toolbar-actions button::before{display:inline-block;margin-right:6px;font-size:14px;vertical-align:-1px}.optimize-action::before{content:'↗'}.recalculate-action::before{content:'◷'}.load-action::before{content:'↙'}.save-action::before{content:'✓'}.load-action{border-color:#9cb5da;background:#f4f7fd;color:var(--navy)}.save-action{border-color:#72bf8e;background:var(--good-bg);color:var(--good)}.save-action:hover{border-color:var(--good);background:#dff5e7}
+  .route-toolbar{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}.toolbar-section{background:#fff;border:1px solid var(--grey-300);border-radius:10px;padding:11px}.toolbar-label{display:block;margin:0 0 8px;font-size:9px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--grey-100)}.toolbar-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}.toolbar-actions button{min-height:42px;padding:9px 10px}.toolbar-actions button::before{display:inline-block;margin-right:6px;font-size:14px;vertical-align:-1px}.optimize-action::before{content:'↗'}.recalculate-action::before{content:'◷'}.load-action::before{content:'↙'}.save-action::before{content:'✓'}.delete-route-action::before{content:'×'}.load-action{border-color:#9cb5da;background:#f4f7fd;color:var(--navy)}.save-action{border-color:#72bf8e;background:var(--good-bg);color:var(--good)}.save-action:hover{border-color:var(--good);background:#dff5e7}.delete-route-action{grid-column:1/-1;border-color:#e6aaa5;background:#fff7f6;color:#b42318}.delete-route-action:hover{border-color:#b42318;background:#fdecea}.delete-route-action:disabled{opacity:.45;cursor:not-allowed}
   .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}.summary-item{background:#fff;border:1px solid var(--grey-300);border-radius:8px;padding:10px}.summary-label{display:block;font-size:9px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:var(--grey-100);margin-bottom:4px}.summary-value{font-family:var(--font-title);font-weight:900;font-size:17px;color:var(--navy-dark)}
   #route-map{height:260px;border:1px solid var(--grey-300);border-radius:9px;margin-bottom:14px;background:#e9edf4}.empty{padding:28px 18px;text-align:center;background:#fff;border:1px dashed var(--grey-200);border-radius:9px;color:var(--grey-100);font-size:12px;line-height:1.5}
   .stop-list{display:flex;flex-direction:column;gap:9px}.stop{display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:10px;align-items:start;background:#fff;border:1px solid var(--grey-300);border-radius:9px;padding:11px}.stop-number{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:var(--navy);color:#fff;font-family:var(--font-title);font-size:16px;font-weight:900}
@@ -91,8 +91,9 @@
       </div>
       <div class="grid-2">
         <div class="field"><label for="order-id">N° de pedido</label><input type="text" id="order-id"></div>
-        <div class="field"><label for="customer-name">Nombre del cliente</label><input type="text" id="customer-name"></div>
+        <div class="field"><label for="reference-number">N° de referencia</label><input type="text" inputmode="numeric" id="reference-number" placeholder="Últimos números del ticket"></div>
       </div>
+      <div class="field"><label for="customer-name">Nombre del cliente</label><input type="text" id="customer-name"></div>
       <div class="field"><label for="customer-phone">Teléfono</label><input type="text" inputmode="tel" autocomplete="tel" id="customer-phone" placeholder="Ej: 11 5555-5555"></div>
       <div class="field">
         <label>Rango de horario</label>
@@ -122,6 +123,7 @@
           <div class="toolbar-actions">
             <button class="secondary load-action" type="button" id="btn-load-route" title="Carga la ruta guardada para la fecha seleccionada">Cargar ruta del día</button>
             <button class="secondary save-action" type="button" id="btn-save-route" title="Guarda los cambios de la ruta actual">Guardar ruta</button>
+            <button class="secondary delete-route-action" type="button" id="btn-delete-route" title="Elimina la ruta cargada para crear una nueva" disabled>Eliminar ruta cargada</button>
           </div>
         </div>
       </div>
@@ -303,6 +305,7 @@
   function readOrderForm(){
     return {
       id:document.getElementById('order-id').value.trim(),
+      referencia:document.getElementById('reference-number').value.trim(),
       cliente:document.getElementById('customer-name').value.trim(),
       telefono:document.getElementById('customer-phone').value.trim(),
       horarioDesde:readQuarterTime('window-from'),
@@ -325,7 +328,7 @@
   }
 
   function clearOrderForm(){
-    ['customer-name','customer-phone','comments','address'].forEach(function(id){ document.getElementById(id).value = ''; });
+    ['reference-number','customer-name','customer-phone','comments','address'].forEach(function(id){ document.getElementById(id).value = ''; });
     setQuarterTime('window-from','');setQuarterTime('window-to','');
     document.getElementById('order-id').value = newOrderId();
     document.getElementById('address-picked').style.display = 'none';
@@ -465,7 +468,7 @@
       row.innerHTML='<div class="stop-number">'+(index+1)+'</div>'+
         '<div><div class="stop-title">'+escapeHtml(order.id)+' · '+escapeHtml(order.cliente)+'</div>'+
         '<div class="stop-address">'+escapeHtml(order.destino.direccion)+'</div>'+
-        '<div class="stop-meta"><span class="tag eta '+(late?'late':'')+'">ETA '+etaText+'</span><span class="tag">'+cumulative+'</span><span class="tag">'+escapeHtml(order.horarioDesde)+'–'+escapeHtml(order.horarioHasta)+'</span><span class="tag">'+formatDuration(serviceSeconds())+' de entrega</span></div></div>'+
+        '<div class="stop-meta">'+(order.referencia?'<span class="tag">Ref. '+escapeHtml(order.referencia)+'</span>':'')+'<span class="tag eta '+(late?'late':'')+'">ETA '+etaText+'</span><span class="tag">'+cumulative+'</span><span class="tag">'+escapeHtml(order.horarioDesde)+'–'+escapeHtml(order.horarioHasta)+'</span><span class="tag">'+formatDuration(serviceSeconds())+' de entrega</span></div></div>'+
         '<div class="stop-actions"><button class="icon-btn" data-action="up" title="Subir parada">↑</button><button class="icon-btn" data-action="down" title="Bajar parada">↓</button><button class="icon-btn" data-action="edit" title="Editar parada">✎</button><button class="icon-btn remove" data-action="remove" title="Eliminar parada">×</button></div>';
       row.querySelectorAll('[data-action]').forEach(function(button){
         button.addEventListener('click',function(){handleStopAction(index,button.getAttribute('data-action'));});
@@ -481,7 +484,7 @@
     if(action==='remove'){orders.splice(index,1);isRouteDirty=true;if(editIndex===index)clearOrderForm();await refreshRoute(false);}
     if(action==='edit'){
       var order=orders[index];editIndex=index;selectedDestination=order.destino;
-      document.getElementById('order-id').value=order.id;document.getElementById('customer-name').value=order.cliente;
+      document.getElementById('order-id').value=order.id;document.getElementById('reference-number').value=order.referencia||'';document.getElementById('customer-name').value=order.cliente;
       document.getElementById('customer-phone').value=order.telefono;setQuarterTime('window-from',order.horarioDesde);
       setQuarterTime('window-to',order.horarioHasta);document.getElementById('comments').value=order.comentarios||'';
       document.getElementById('address').value=order.destino.direccion;
@@ -541,6 +544,7 @@
     originPicked.textContent='Salida predeterminada: '+DEFAULT_ORIGIN.direccion;originPicked.style.display='block';
     document.getElementById('saved-route').style.display='none';
     document.getElementById('btn-save-route').textContent='Guardar ruta';
+    document.getElementById('btn-delete-route').disabled=true;
     clearOrderForm();renderOrders();renderMap();
     document.getElementById('summary-distance').textContent='—';
     document.getElementById('summary-finish').textContent='—';
@@ -567,7 +571,7 @@
       var loaded=await Promise.all(routeStops.map(async function(stop){
         var orderSnapshot=await db.ref('pedidos/'+stop.pedidoId).once('value');
         var value=orderSnapshot.val()||{};
-        return {id:stop.pedidoId,cliente:value.cliente||'',telefono:value.telefono||'',horarioDesde:value.horarioDesde||'',horarioHasta:value.horarioHasta||'',comentarios:value.comentarios||'',destino:value.destino||stop.destino};
+        return {id:stop.pedidoId,referencia:value.referencia||'',cliente:value.cliente||'',telefono:value.telefono||'',horarioDesde:value.horarioDesde||'',horarioHasta:value.horarioHasta||'',comentarios:value.comentarios||'',destino:value.destino||stop.destino};
       }));
       orders=loaded;currentRouteId=selectedId;previousRouteOrderIds=loaded.map(function(order){return order.id;});
       origin=selectedRoute.origen||null;
@@ -584,6 +588,7 @@
       isRouteDirty=false;
       document.getElementById('route-status').textContent='Ruta cargada. Podés editarla y volver a guardarla.';
       document.getElementById('btn-save-route').textContent='Actualizar ruta';
+      document.getElementById('btn-delete-route').disabled=false;
       return true;
     }catch(error){alert('No se pudo cargar la ruta: '+error.message);return false;}
   }
@@ -635,7 +640,7 @@
       });
       orders.forEach(function(order,index){
         updates['pedidos/'+order.id]={
-          destino:order.destino,cliente:order.cliente,telefono:order.telefono,horarioDesde:order.horarioDesde,
+          destino:order.destino,referencia:order.referencia||null,cliente:order.cliente,telefono:order.telefono,horarioDesde:order.horarioDesde,
           horarioHasta:order.horarioHasta,comentarios:order.comentarios||null,creado:createdAt,estado:'pendiente',
           rutaId:currentRouteId,orden:index+1,estimadoLlegada:order.eta,tiempoServicioMinutos:Math.round(serviceSeconds()/60)
         };
@@ -648,6 +653,7 @@
       await db.ref().update(updates);
       previousRouteOrderIds=orders.map(function(order){return order.id;});
       isRouteDirty=false;showSavedLinks();
+      document.getElementById('btn-delete-route').disabled=false;
       document.getElementById('route-status').textContent='Ruta guardada correctamente en Firebase.';
       return true;
     }catch(error){alert('No se pudo guardar la ruta: '+error.message);return false;}
@@ -655,6 +661,31 @@
   }
 
   document.getElementById('btn-save-route').addEventListener('click',function(){saveCurrentRoute(this);});
+
+  document.getElementById('btn-delete-route').addEventListener('click',async function(){
+    if(!configured){alert('Configurá Firebase primero.');return;}
+    if(!currentRouteId){alert('Primero cargá la ruta que querés eliminar.');return;}
+    var routeIdToDelete=currentRouteId;
+    var routeDate=activeRouteDate||document.getElementById('route-date').value||todayValue();
+    var message='¿Eliminar la ruta guardada del '+formatRouteDate(routeDate)+'?\n\nLos pedidos dejarán de estar asignados a esta ruta y podrás cargar una nueva.';
+    if(!window.confirm(message))return;
+    var button=this;button.disabled=true;button.textContent='Eliminando...';
+    try{
+      var updates={};
+      updates['rutas/'+routeIdToDelete]=null;
+      previousRouteOrderIds.forEach(function(id){
+        updates['pedidos/'+id+'/rutaId']=null;
+        updates['pedidos/'+id+'/orden']=null;
+        updates['pedidos/'+id+'/estimadoLlegada']=null;
+      });
+      await db.ref().update(updates);
+      resetRouteWorkspace();
+      document.getElementById('route-status').textContent='Ruta eliminada. Ya podés crear una nueva para este día.';
+    }catch(error){
+      alert('No se pudo eliminar la ruta: '+error.message);
+      button.disabled=false;button.textContent='Eliminar ruta cargada';
+    }
+  });
 
   function formatRouteDate(value){
     if(!value)return '';
@@ -711,7 +742,7 @@
     container.appendChild(driverRow);
     orders.forEach(function(order,index){
       var row=document.createElement('div');row.className='saved-row';
-      row.innerHTML='<b>'+(index+1)+'. '+escapeHtml(order.id)+' · '+escapeHtml(order.cliente)+'</b>'+
+      row.innerHTML='<b>'+(index+1)+'. '+escapeHtml(order.id)+(order.referencia?' · Ref. '+escapeHtml(order.referencia):'')+' · '+escapeHtml(order.cliente)+'</b>'+
         '<div class="links"><a target="_blank" rel="noopener" href="'+base+'cliente.html?id='+encodeURIComponent(order.id)+'">Abrir link individual del cliente</a></div>';
       container.appendChild(row);
     });
