@@ -58,6 +58,22 @@
   .marker-number{display:flex;align-items:center;justify-content:center;width:28px;height:28px;background:var(--navy);color:#fff;border:2px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(3,19,67,.3);font:900 13px var(--font-base)}.marker-origin{background:var(--red)}
   @media(max-width:900px){body{padding:12px}.workspace{grid-template-columns:1fr}.form-column{border-right:0;border-bottom:1px solid var(--grey-300)}}
   @media(max-width:560px){input,select,textarea{font-size:16px}body{padding:0}.app{border-radius:0;min-height:100vh}.topbar{padding:10px 14px}.brand-symbol{width:38px;height:38px}.brand-wordmark{width:145px}.topbar-copy{display:none}.form-column,.route-column{padding:18px}.grid-3{grid-template-columns:1fr 1fr}.summary{grid-template-columns:1fr 1fr}.summary-item:last-child{grid-column:1/-1}.route-toolbar{grid-template-columns:1fr}.toolbar-actions{grid-template-columns:1fr 1fr}.stop{grid-template-columns:34px minmax(0,1fr)}.stop-actions{grid-column:2;display:flex}}
+
+  body.customer-share-opened{overflow:hidden;}
+  .customer-share-modal[hidden],.customer-share-modal [hidden]{display:none!important;}
+  .customer-share-modal{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(3,19,67,.6);}
+  .customer-share-card{width:100%;max-width:440px;max-height:90vh;max-height:90dvh;overflow:auto;background:#fff;padding:22px;border-radius:14px;box-shadow:0 12px 40px #0003;}
+  .customer-share-card h2{font-family:var(--font-title);color:var(--navy);font-size:24px;margin:0 0 10px;}
+  .customer-share-card p{font-size:14px;line-height:1.45;margin:0 0 14px;}
+  .customer-share-options{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px;}
+  .customer-share-options a,.customer-share-options button,.customer-share-open,.customer-share-close{display:block;border:0;border-radius:7px;padding:13px 10px;min-height:46px;text-align:center;font-size:15px;font-weight:900;text-decoration:none;}
+  .customer-share-whatsapp{background:#1a7a41;color:white;}.customer-share-respond{background:#061c5d;color:white;}
+  .customer-share-other{grid-column:1/-1;background:#eef3fb;color:#061c5d;}
+  .customer-share-card textarea{font-size:16px;min-height:100px;}
+  .customer-share-status{font-size:14px;line-height:1.45;margin:10px 0;color:#061c5d;}
+  .customer-share-open{background:#061c5d;color:white;margin:10px 0;}
+  .customer-share-close{width:100%;background:#eef3fb;color:#061c5d;}
+  .customer-share-card a:focus-visible,.customer-share-card button:focus-visible{outline:3px solid #1F6ED4;outline-offset:2px;}
 </style>
 </head>
 <body>
@@ -164,6 +180,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="customer-share.js"></script>
 <script>
   var firebaseConfig = {
     apiKey: "AIzaSyCbI1PcP5f1jeqZSQRsNME2uEk_IK0yWqQ",
@@ -843,14 +860,8 @@
   });
   document.getElementById('btn-cancel-date-change').addEventListener('click',closeDateChangeModal);
 
-  async function shareGeneratedLink(title,url){
-    var textToShare=title+'\n'+url;
-    if(navigator.share){
-      try{await navigator.share({title:title,text:title,url:url});return;}catch(error){
-        if(error&&error.name==='AbortError')return;
-      }
-    }
-    window.open('https://wa.me/?text='+encodeURIComponent(textToShare),'_blank','noopener');
+  function shareGeneratedLink(title,url){
+    GanaderaCustomerShare.show(title,url);
   }
 
   function showSavedLinks(){
