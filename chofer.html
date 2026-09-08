@@ -100,6 +100,18 @@
   .map-expanded .leaflet-top{top:env(safe-area-inset-top,0px);}
   .map-expanded .leaflet-right{right:env(safe-area-inset-right,0px);}
   .map-expanded .leaflet-left{left:env(safe-area-inset-left,0px);}
+
+  [hidden]{display:none!important;}
+  .gps-manual{margin-top:10px;}
+  .gps-prompt{position:fixed;inset:0;z-index:20000;background:rgba(3,19,67,.65);display:flex;align-items:center;justify-content:center;padding:20px;}
+  .gps-prompt-card{background:#fff;color:#061c5d;border-radius:14px;padding:22px;max-width:400px;box-shadow:0 12px 40px #0003;}
+  .gps-prompt-card h2{font-size:23px;margin:0 0 12px;}.gps-prompt-card p{font-size:16px;line-height:1.5;margin:0 0 18px;}
+  .gps-prompt-card button{width:100%;min-height:46px;}.gps-later{margin-top:9px;background:#fff;color:#061c5d;border:1px solid #cbd2de;border-radius:7px;font-size:15px;}
+  .gps-panel{box-sizing:border-box;width:calc(100vw - 36px);max-width:340px;background:#061c5d;color:#fff;padding:13px;border-radius:12px;box-shadow:0 3px 18px #0004;font-family:'Lato',sans-serif;}
+  .gps-mode{font-size:11px;color:#cbdcff;margin-bottom:5px;}.gps-turn{display:block;font-size:19px;line-height:1.25;}.gps-detail{font-size:13px;margin-top:7px;}.gps-notice{font-size:12px;line-height:1.35;color:#d9e5ff;margin-top:5px;}
+  .gps-buttons{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}.gps-buttons button{flex:1;min-height:44px;border:1px solid #b5caff;border-radius:6px;background:#fff;color:#061c5d;font-size:12px;font-weight:bold;padding:6px;cursor:pointer;}.gps-buttons button:disabled{opacity:.6;}.gps-buttons button:focus-visible{outline:3px solid #ef3434;}
+  .map-expanded .leaflet-bottom{bottom:env(safe-area-inset-bottom,0px);}
+  @media(orientation:landscape) and (max-height:500px){.gps-panel{max-width:310px;padding:9px;}.gps-turn{font-size:16px;}.gps-notice{display:none;}.gps-mode{margin:0;}.gps-buttons{margin-top:5px;}}
 </style>
 </head>
 <body>
@@ -174,6 +186,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="driver-navigation.js"></script>
 <script>
   var firebaseConfig = {
     apiKey: "AIzaSyCbI1PcP5f1jeqZSQRsNME2uEk_IK0yWqQ",
@@ -266,12 +279,18 @@
 
   var myMarker = null, destMarker = null, routeLine = null;
   var destino = null;
-  var lastRouteFetch = 0;
   var orderLocked = false;
+  var watchId = null, sharing = false, hasSharedLocation = false, lastSharedPosition = null, shareSession = 0;
+  var navigation=GanaderaNavigation.create(map,{
+    destination:function(){return destino;},
+    expand:function(){var node=map.getContainer();if(!node.classList.contains('map-expanded'))node.querySelector('.map-size-control button').click();},
+    collapse:function(){if(map.getContainer().classList.contains('map-expanded')&&expandedDriverMap)expandedDriverMap();}
+  });
 
   function lockDeliveredOrder(order){
     if(orderLocked)return;
     orderLocked=true;
+    shareSession++;navigation.sharingStopped();
     if(expandedDriverMap)expandedDriverMap();
     if(sharing&&watchId!==null){navigator.geolocation.clearWatch(watchId);watchId=null;sharing=false;}
     document.getElementById('map').style.display='none';
@@ -284,50 +303,35 @@
     canvas.style.pointerEvents='none';
   }
 
-  if(configured&&!routeId){
+  if(configured&&orderId&&!routeId){
     db.ref('pedidos/'+orderId).on('value',function(snap){
       var order=snap.val();
-      if(!order){document.getElementById('destino-hint').textContent='Este pedido no existe.';return;}
+      if(!order){shareSession++;navigation.sharingStopped();if(watchId!==null)navigator.geolocation.clearWatch(watchId);watchId=null;sharing=false;document.getElementById('destino-hint').textContent='Este pedido no existe.';return;}
       if(order.estado==='entregado'||(order.entrega&&order.entrega.confirmado)){lockDeliveredOrder(order);return;}
+      var previousDestination=destino?destino.lat+','+destino.lng:'';
       destino=order.destino||null;
+      var destinationChanged=previousDestination!==(destino?destino.lat+','+destino.lng:'');
       if(destino&&!destMarker){
         destMarker=L.marker([destino.lat,destino.lng],{icon:pinIcon}).addTo(map);
         document.getElementById('destino-hint').textContent='Destino: '+destino.direccion;
         map.setView([destino.lat,destino.lng],13);
+      }else if(destino&&destMarker){
+        destMarker.setLatLng([destino.lat,destino.lng]);
+        document.getElementById('destino-hint').textContent='Destino: '+destino.direccion;
       }else if(!destino){
+        if(destMarker){map.removeLayer(destMarker);destMarker=null;}
         document.getElementById('destino-hint').textContent='Este pedido no tiene destino cargado.';
       }
+      if(destinationChanged)navigation.destinationChanged();
     });
   }
 
-  async function updateRoute(from){
-    if (!destino) return;
-    var now = Date.now();
-    if (now - lastRouteFetch < 8000) return;
-    lastRouteFetch = now;
-    try {
-      var url = 'https://router.project-osrm.org/route/v1/driving/' + from[1] + ',' + from[0] + ';' + destino.lng + ',' + destino.lat + '?overview=full&geometries=geojson';
-      var res = await fetch(url);
-      var data = await res.json();
-      if (data.code !== 'Ok') return;
-      var route = data.routes[0];
-      var km = (route.distance / 1000).toFixed(1);
-      var min = Math.max(1, Math.round(route.duration / 60));
-      document.getElementById('rep-dist').textContent = km + ' km';
-      document.getElementById('rep-eta').textContent = min + ' min';
-      var coords = route.geometry.coordinates.map(function(c){ return [c[1], c[0]]; });
-      if (routeLine) map.removeLayer(routeLine);
-      routeLine = L.polyline(coords, {color:'#1F6ED4', weight:4, opacity:0.75}).addTo(map);
-    } catch(e){ /* silencioso: sigue mostrando el último valor conocido */ }
-  }
-
-  var watchId = null, sharing = false, hasSharedLocation = false, lastSharedPosition = null;
-
   function toggleShare(){
+    if(orderLocked)return;
     if (!configured){ document.getElementById('rep-status').innerHTML = '<span style="color:var(--red)">Configurá Firebase primero.</span>'; return; }
     if (sharing){
       navigator.geolocation.clearWatch(watchId);
-      sharing = false;
+      sharing = false;watchId=null;shareSession++;navigation.sharingStopped();
       document.getElementById('btn-toggle').textContent = 'Compartir mi ubicación';
       document.getElementById('btn-toggle').classList.remove('stop');
       document.getElementById('rep-estado').textContent = 'Detenido';
@@ -335,28 +339,34 @@
       return;
     }
     if (!navigator.geolocation){ document.getElementById('rep-status').innerHTML = '<span style="color:var(--red)">Este navegador no soporta geolocalización.</span>'; return; }
-    sharing = true;
+    sharing = true;shareSession++;var session=shareSession;navigation.sharingStarted();
     document.getElementById('btn-toggle').textContent = 'Detener envío';
     document.getElementById('btn-toggle').classList.add('stop');
     document.getElementById('rep-estado').textContent = 'Compartiendo';
     document.getElementById('rep-status').innerHTML = 'Transmitiendo posición <b>en vivo</b>.';
 
     watchId = navigator.geolocation.watchPosition(function(pos){
+      if(session!==shareSession||!sharing||orderLocked)return;
       var lat=pos.coords.latitude,lng=pos.coords.longitude;
-      lastSharedPosition={lat:lat,lng:lng,updatedAt:Date.now()};
-      db.ref('pedidos/'+orderId+'/posicion').set(lastSharedPosition).then(function(){
+      var sentPosition={lat:lat,lng:lng,updatedAt:Date.now()};
+      navigation.position({lat:lat,lng:lng,updatedAt:pos.timestamp||Date.now(),accuracy:Number.isFinite(pos.coords.accuracy)?pos.coords.accuracy:9999});
+      db.ref('pedidos/'+orderId+'/posicion').set(sentPosition).then(function(){
+        if(session!==shareSession||!sharing||orderLocked)return;
+        if(!lastSharedPosition||sentPosition.updatedAt>=lastSharedPosition.updatedAt)lastSharedPosition=sentPosition;
         hasSharedLocation=true;
         document.getElementById('rep-status').innerHTML='Ubicación compartida y transmitiendo <b>en vivo</b>.';
+        navigation.confirmed();
       }).catch(function(error){
+        if(session!==shareSession||!sharing||orderLocked)return;
         document.getElementById('rep-status').innerHTML='<span style="color:var(--red)">No se pudo compartir la ubicación: '+driverEscape(error.message)+'</span>';
       });
       if(!myMarker){myMarker=L.marker([lat,lng],{icon:vanIcon}).addTo(map);}
       else{myMarker.setLatLng([lat,lng]);}
-      map.panTo([lat,lng]);
-      updateRoute([lat,lng]);
     }, function(err){
-      document.getElementById('rep-status').innerHTML = '<span style="color:var(--red)">Error de GPS: ' + err.message + '</span>';
-    }, { enableHighAccuracy:true, maximumAge:5000, timeout:10000 });
+      if(session!==shareSession||!sharing||orderLocked)return;
+      navigation.gpsError();
+      document.getElementById('rep-status').textContent='Error de GPS: '+err.message;
+    }, { enableHighAccuracy:true, maximumAge:1000, timeout:10000 });
   }
   document.getElementById('btn-toggle').addEventListener('click', toggleShare);
 
@@ -403,6 +413,7 @@
         lockDeliveredOrder(transactionResult.order||{});
         throw new Error('Esta entrega ya había sido confirmada.');
       }
+      shareSession++;navigation.sharingStopped();
       if(returnRouteId)await db.ref('rutas/'+returnRouteId+'/actualizada').set(confirmedAt);
       if(sharing&&watchId!==null){navigator.geolocation.clearWatch(watchId);watchId=null;sharing=false;}
       if(returnRouteId||returnToPermanent){
