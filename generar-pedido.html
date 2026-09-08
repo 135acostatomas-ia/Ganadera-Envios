@@ -74,6 +74,14 @@
   .customer-share-open{background:#061c5d;color:white;margin:10px 0;}
   .customer-share-close{width:100%;background:#eef3fb;color:#061c5d;}
   .customer-share-card a:focus-visible,.customer-share-card button:focus-visible{outline:3px solid #1F6ED4;outline-offset:2px;}
+
+  #route-fixed-settings{display:none!important;}
+  .route-date-bar{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:center;border:1px solid var(--grey-200);border-radius:8px;padding:8px 12px;margin-bottom:18px;background:#fff;}
+  .route-date-bar label{margin:0;color:var(--navy);font-size:12px;}
+  .route-date-bar input{min-width:0;max-width:100%;width:100%;border:0;padding:7px 0;background:transparent;font-size:16px;box-sizing:border-box;}
+  .saved-row .links{flex-wrap:wrap;align-items:center;}
+  .saved-row .links .customer-direct{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 12px;border-radius:6px;color:#fff;background:var(--good);font-size:12px;font-weight:900;text-decoration:none;}
+  .saved-row .links .customer-direct-respond{background:var(--navy);}
 </style>
 </head>
 <body>
@@ -92,10 +100,15 @@
       <h1 class="section-title">Nueva entrega</h1>
       <p class="section-copy">Cargá los pedidos de la jornada. Podés editarlos antes o después de calcular la ruta.</p>
 
+      <div class="route-date-bar">
+        <label for="route-date">Fecha</label>
+        <input type="date" id="route-date" aria-label="Fecha de la ruta">
+      </div>
+      <div hidden aria-hidden="true" id="route-fixed-settings">
       <div class="card">
-        <h2 class="card-title">Configuración de la jornada</h2>
+        
         <div class="grid-3">
-          <div class="field"><label for="route-date">Fecha</label><input type="date" id="route-date"></div>
+          
           <div class="field"><label for="departure-time">Hora de salida</label><input type="time" id="departure-time" value="10:00"></div>
           <div class="field"><label for="service-minutes">Min. por entrega</label><input type="number" id="service-minutes" min="1" max="120" value="15"></div>
         </div>
@@ -104,6 +117,9 @@
           <div class="search-row"><input type="text" id="origin-address" value="Av. Hipólito Yrigoyen 1815, B1618 El Talar, Provincia de Buenos Aires" placeholder="Depósito o punto de partida"><button class="secondary" type="button" id="btn-search-origin">Buscar</button></div>
           <div class="status" id="origin-status"></div><div class="results" id="origin-results"></div><div class="picked" id="origin-picked"></div>
         </div>
+      </div>
+
+
       </div>
 
       <div class="edit-note" id="edit-note">Editando una parada. Guardá los cambios o cancelá la edición.</div>
@@ -180,7 +196,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-<script src="customer-share.js"></script>
+<script src="customer-share.js?v=20260908-2"></script>
 <script>
   var firebaseConfig = {
     apiKey: "AIzaSyCbI1PcP5f1jeqZSQRsNME2uEk_IK0yWqQ",
@@ -876,7 +892,19 @@
       var customerUrl=base+'cliente.html?id='+encodeURIComponent(order.id);
       row.innerHTML='<b>'+(index+1)+'. '+escapeHtml(order.id)+(order.referencia?' · Ref. '+escapeHtml(order.referencia):'')+' · '+escapeHtml(order.cliente)+'</b>'+
         '<div class="links"><a target="_blank" rel="noopener" href="'+customerUrl+'">Abrir link del cliente</a><button type="button" class="share-link">Compartir</button></div>';
-      row.querySelector('.share-link').addEventListener('click',function(){shareGeneratedLink('Seguimiento de tu pedido · Ganadera Panamericana',customerUrl);});
+      var shareTitle='Seguimiento de tu pedido · Ganadera Panamericana';
+      var directWhatsApp=document.createElement('a');
+      directWhatsApp.className='customer-direct customer-direct-whatsapp';directWhatsApp.textContent='WhatsApp';
+      directWhatsApp.href='https://wa.me/?text='+encodeURIComponent(shareTitle+'\n'+customerUrl);
+      directWhatsApp.target='_blank';directWhatsApp.rel='noopener noreferrer';
+      var directRespond=document.createElement('a');
+      directRespond.className='customer-direct customer-direct-respond';directRespond.textContent='Respond';
+      directRespond.href='https://app.respond.io/';directRespond.target='_blank';directRespond.rel='noopener noreferrer';
+      directRespond.addEventListener('click',function(event){GanaderaCustomerShare.respond(event,shareTitle,customerUrl);});
+      var links=row.querySelector('.links'),shareButton=row.querySelector('.share-link');
+      links.insertBefore(directWhatsApp,shareButton);links.insertBefore(directRespond,shareButton);
+      shareButton.textContent='Más opciones';
+      shareButton.addEventListener('click',function(){shareGeneratedLink(shareTitle,customerUrl);});
       container.appendChild(row);
     });
     document.getElementById('saved-title').textContent='Ruta guardada: '+currentRouteId;

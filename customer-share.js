@@ -46,5 +46,8 @@
     };
     whatsapp.focus();
   }
-  global.GanaderaCustomerShare={show:show};
+  global.GanaderaCustomerShare={show:show,respond:function(event,title,url){
+    show(title,url);
+    modal.querySelector('.customer-share-respond').onclick(event);
+  }};
 })(window);
