@@ -1,4 +1,7 @@
 {
+  "redirects": [
+    { "source": "/", "destination": "/generar-pedido.html", "permanent": false }
+  ],
   "headers": [
     {
       "source": "/generar-pedido.html",
