@@ -64,17 +64,26 @@
   #driver-route-map{height:330px;border:1px solid var(--grey-300);border-radius:10px;margin-bottom:14px;}
   .route-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
   .route-toolbar button{flex:1;min-width:150px;padding:11px 14px;border-radius:5px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;cursor:pointer;}
-  .route-toolbar .route-primary{border:0;background:var(--blue);color:#fff;}.route-toolbar .route-secondary{border:1px solid var(--grey-300);background:#fff;color:var(--navy);}.route-toolbar .route-start{flex-basis:100%;border:0;background:#1a7a41;color:#fff}
+  .route-toolbar .route-primary{border:0;background:var(--blue);color:#fff;}.route-toolbar .route-secondary{border:1px solid var(--grey-300);background:#fff;color:var(--navy);}.route-toolbar .route-secondary.is-active{border-color:var(--blue);background:#eef3fb;color:var(--blue)}.route-toolbar .route-start{flex-basis:100%;border:0;background:#1a7a41;color:#fff}
   .route-toolbar button:disabled{opacity:.55;cursor:not-allowed;}
   .driver-route-status{font-size:12px;color:var(--grey-100);min-height:18px;margin-bottom:10px;}
   .driver-stops{display:flex;flex-direction:column;gap:10px;}
-  .driver-card{display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:12px;background:#fff;border:1px solid var(--grey-300);border-radius:10px;padding:14px;}
+  .driver-card{display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:12px;background:#fff;border:1px solid var(--grey-300);border-radius:10px;padding:14px;transition:border-color .16s,box-shadow .16s,transform .16s;}
   .driver-card.delivered{border-color:#8dd5a7;background:#f3fbf6;opacity:.82;}
   .driver-card.delivered .driver-number{background:#1a7a41;}
+  .driver-card.sortable-ghost{opacity:.35;background:#eef3fb;}
+  .driver-card.sortable-chosen{border-color:var(--blue);box-shadow:0 8px 22px rgba(31,110,212,.18);}
+  .driver-card.sortable-drag{transform:scale(1.01);}
   .driver-number{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:var(--navy);color:#fff;font-family:var(--font-title);font-size:18px;font-weight:900;}
+  .driver-lead{display:flex;align-items:flex-start;justify-content:center;}
+  .drag-handle{display:none;width:42px;min-height:48px;border:1px solid var(--blue-border);border-radius:8px;background:#eef3fb;color:var(--navy);font:900 18px var(--font-base);touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;}
+  .drag-handle:active{cursor:grabbing;}
+  .driver-stops.reorder-mode .driver-card:not(.delivered){border-color:var(--blue-border);}
+  .driver-stops.reorder-mode .driver-card:not(.delivered) .driver-number{display:none;}
+  .driver-stops.reorder-mode .driver-card:not(.delivered) .drag-handle{display:block;}
   .driver-card h2{font-size:15px;color:var(--navy-dark);margin:0 0 4px;}.driver-address{font-size:12px;line-height:1.4;color:var(--grey-100);}
   .driver-details{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px;}.driver-tag{font-size:10px;font-weight:700;color:var(--navy);background:#eef3fb;border-radius:999px;padding:5px 8px;}.driver-tag.eta{background:#e9f9ef;color:#1a7a41;}.driver-comments{font-size:11.5px;color:var(--grey);margin-top:9px;padding:8px 10px;background:var(--grey-500);border-radius:6px;}
-  .driver-card-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;align-content:start;}.route-icon{width:34px;height:32px;border:1px solid var(--grey-300);border-radius:5px;background:#fff;color:var(--navy);font-weight:900;cursor:pointer;}.route-link{grid-column:1/-1;text-align:center;text-decoration:none;border-radius:5px;background:var(--blue);color:#fff;padding:8px;font-size:10px;font-weight:900;text-transform:uppercase;}.nav-link{grid-column:1/-1;text-align:center;text-decoration:none;border:1px solid var(--grey-300);border-radius:5px;color:var(--navy);padding:7px;font-size:10px;font-weight:900;text-transform:uppercase;}
+  .driver-card-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;align-content:start;}.route-icon{min-width:38px;min-height:36px;border:1px solid var(--grey-300);border-radius:5px;background:#fff;color:var(--navy);font-weight:900;cursor:pointer;}.route-link{grid-column:1/-1;text-align:center;text-decoration:none;border-radius:5px;background:var(--blue);color:#fff;padding:8px;font-size:10px;font-weight:900;text-transform:uppercase;}.nav-link{grid-column:1/-1;text-align:center;text-decoration:none;border:1px solid var(--grey-300);border-radius:5px;color:var(--navy);padding:7px;font-size:10px;font-weight:900;text-transform:uppercase;}.make-next{grid-column:1/-1;border:1px solid var(--blue-border);border-radius:5px;background:#eef3fb;color:var(--navy);padding:8px;font-size:10px;font-weight:900;text-transform:uppercase;cursor:pointer}.next-label{grid-column:1/-1;text-align:center;border-radius:5px;background:#e9f9ef;color:#1a7a41;padding:8px;font-size:10px;font-weight:900;text-transform:uppercase}.reorder-help{display:none;margin:-2px 0 12px;padding:10px 12px;border-radius:7px;background:#eef3fb;color:var(--navy);font-size:12px;line-height:1.45}.reorder-help.visible{display:block;}
   .route-marker{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:var(--navy);border:2px solid #fff;color:#fff;box-shadow:0 2px 6px rgba(3,19,67,.3);font:900 13px var(--font-base);}.route-marker.origin{background:var(--red);}
   .route-marker.delivered{background:#1a7a41;}
   @media (max-width:480px){
@@ -83,7 +92,7 @@
     .brand-wordmark{ width:126px; }
     .role-pill{ display:none; }
     .topbar{ padding:10px 14px; }
-    .driver-route{padding:16px;}.route-heading{display:block}.route-summary{grid-template-columns:1fr 1fr}.route-summary .stat:last-child{grid-column:1/-1}.driver-card{grid-template-columns:36px minmax(0,1fr)}.driver-card-actions{grid-column:2;display:flex;flex-wrap:wrap}.route-link,.nav-link{grid-column:auto;flex:1;min-width:120px}.route-toolbar button{min-width:125px}#driver-route-map{height:280px;}
+    .driver-route{padding:16px;}.route-heading{display:block}.route-summary{grid-template-columns:1fr 1fr}.route-summary .stat:last-child{grid-column:1/-1}.driver-card{grid-template-columns:44px minmax(0,1fr)}.driver-card-actions{grid-column:2;display:flex;flex-wrap:wrap}.route-link,.nav-link,.make-next,.next-label{grid-column:auto;flex:1;min-width:120px}.route-toolbar button{min-width:125px}#driver-route-map{height:280px;}
   }
 
   body.driver-map-expanded{overflow:hidden;}
@@ -138,9 +147,7 @@
     <div class="driver-active-content" id="driver-active-content">
       <div class="route-toolbar">
         <button type="button" class="route-start" id="driver-start">Iniciar recorrido</button>
-        <button type="button" class="route-primary" id="driver-optimize">Optimizar ruta</button>
-        <button type="button" class="route-secondary" id="driver-recalculate">Recalcular horarios</button>
-        <button type="button" class="route-secondary" id="driver-save">Guardar cambios</button>
+        <button type="button" class="route-secondary" id="driver-reorder" aria-pressed="false">Reordenar entregas</button>
       </div>
       <div class="route-summary">
         <div class="stat"><p class="stat-label">Paradas</p><p class="stat-value small" id="driver-count">—</p></div>
@@ -149,6 +156,7 @@
       </div>
       <div id="driver-route-map"></div>
       <div class="driver-route-status" id="driver-route-status"></div>
+      <div class="reorder-help" id="driver-reorder-help">Arrastrá las entregas desde el control <b>≡</b> o tocá <b>Hacer siguiente</b>. El nuevo orden se guarda automáticamente.</div>
       <div class="driver-stops" id="driver-stops"></div>
     </div>
   </section>
@@ -184,6 +192,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="driver-navigation.js"></script>
@@ -431,9 +440,27 @@
   });
 
   var driverRoute = null, driverOrders = [], driverMap = null, driverMarkers = null, driverRouteLine = null;
+  var driverReorderMode=false,driverSortable=null,driverOrderVersion=0;
   var driverDeviceId=localStorage.getItem('ganadera-driver-device');
   if(!driverDeviceId){driverDeviceId='dispositivo-'+Date.now()+'-'+Math.random().toString(36).slice(2,8);localStorage.setItem('ganadera-driver-device',driverDeviceId);}
   function canManageDriverRoute(){return !!driverRoute&&driverRoute.estadoRuta==='en_curso'&&driverRoute.tomadaPor===driverDeviceId;}
+
+  function driverUpdateReorderControls(){
+    var button=document.getElementById('driver-reorder');
+    var help=document.getElementById('driver-reorder-help');
+    var container=document.getElementById('driver-stops');
+    button.setAttribute('aria-pressed',driverReorderMode?'true':'false');
+    button.textContent=driverReorderMode?'Listo':'Reordenar entregas';
+    button.classList.toggle('is-active',driverReorderMode);
+    help.classList.toggle('visible',driverReorderMode);
+    container.classList.toggle('reorder-mode',driverReorderMode);
+  }
+
+  function driverSetReorderMode(enabled){
+    driverReorderMode=!!enabled&&canManageDriverRoute();
+    driverUpdateReorderControls();
+    driverRenderCards();
+  }
 
   function driverEscape(value){
     return String(value == null ? '' : value).replace(/[&<>"']/g,function(char){
@@ -544,18 +571,23 @@
   }
   function driverRenderCards(){
     var container=document.getElementById('driver-stops');container.innerHTML='';
+    container.classList.toggle('reorder-mode',driverReorderMode);
     var pendingNumber=0;
     driverOrders.forEach(function(order,index){
       var delivered=order.estado==='entregado';if(!delivered)pendingNumber++;
       var card=document.createElement('article');card.className='driver-card'+(delivered?' delivered':'');
+      card.setAttribute('data-order-id',order.id);card.setAttribute('data-delivered',delivered?'true':'false');
       var phone=order.telefono?'<a class="driver-tag" href="tel:'+driverEscape(order.telefono)+'">Tel. '+driverEscape(order.telefono)+'</a>':'';
       var comments=order.comentarios?'<div class="driver-comments"><b>Indicaciones:</b> '+driverEscape(order.comentarios)+'</div>':'';
       var manageUrl='chofer.html?id='+encodeURIComponent(order.id)+'&volverRuta='+encodeURIComponent(routeId)+(permanentDriverMode?'&volverInicio=1':'');
       var navUrl='https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(order.destino.lat+','+order.destino.lng);
       var statusTag=delivered?'<span class="driver-tag eta">✓ Entregada</span>':'<span class="driver-tag eta">ETA '+driverClock(order.eta)+'</span>';
       var canManage=canManageDriverRoute();
-      var actions=delivered?'<span class="locked-action">✓ Entrega cerrada</span>':(canManage?'<button type="button" class="route-icon" data-action="up" title="Mover antes">↑</button><button type="button" class="route-icon" data-action="down" title="Mover después">↓</button><a class="nav-link" target="_blank" rel="noopener" href="'+navUrl+'">Navegar</a><a class="route-link" href="'+manageUrl+'">Gestionar entrega</a>':'<span class="locked-action">'+(driverRoute.estadoRuta==='en_curso'?'En curso en otro celular':'Tocá “Iniciar recorrido”')+'</span>');
-      card.innerHTML='<div class="driver-number">'+(delivered?'✓':pendingNumber)+'</div><div><h2>'+driverEscape(order.id)+' · '+driverEscape(order.cliente)+'</h2>'+
+      var nextAction=pendingNumber===1?'<span class="next-label">Próxima entrega</span>':'<button type="button" class="make-next" data-action="next">Hacer siguiente</button>';
+      var regularActions=nextAction+'<a class="nav-link" target="_blank" rel="noopener" href="'+navUrl+'">Navegar</a><a class="route-link" href="'+manageUrl+'">Gestionar entrega</a>';
+      var reorderActions=nextAction;
+      var actions=delivered?'<span class="locked-action">✓ Entrega cerrada</span>':(canManage?(driverReorderMode?reorderActions:regularActions):'<span class="locked-action">'+(driverRoute.estadoRuta==='en_curso'?'En curso en otro celular':'Tocá “Iniciar recorrido”')+'</span>');
+      card.innerHTML='<div class="driver-lead"><div class="driver-number">'+(delivered?'✓':pendingNumber)+'</div>'+(delivered?'':'<button type="button" class="drag-handle" aria-label="Arrastrar entrega '+pendingNumber+'">≡ '+pendingNumber+'</button>')+'</div><div><h2>'+driverEscape(order.id)+' · '+driverEscape(order.cliente)+'</h2>'+
         '<div class="driver-address">'+driverEscape(order.destino.direccion)+'</div><div class="driver-details">'+(order.referencia?'<span class="driver-tag">Ref. '+driverEscape(order.referencia)+'</span>':'')+statusTag+
         '<span class="driver-tag">'+driverEscape(order.horarioDesde)+'–'+driverEscape(order.horarioHasta)+'</span>'+phone+'<span class="driver-tag">'+driverDuration(driverServiceSeconds())+' de entrega</span></div>'+comments+'</div>'+
         '<div class="driver-card-actions">'+actions+'</div>';
@@ -565,6 +597,31 @@
       container.appendChild(card);
     });
     document.getElementById('driver-count').textContent=driverPendingOrders().length+' pendientes · '+driverDeliveredOrders().length+' entregadas';
+    driverInitSortable();
+  }
+
+  function driverInitSortable(){
+    if(driverSortable){driverSortable.destroy();driverSortable=null;}
+    if(!driverReorderMode||!canManageDriverRoute()||typeof Sortable==='undefined')return;
+    var container=document.getElementById('driver-stops');
+    driverSortable=Sortable.create(container,{
+      animation:160,
+      handle:'.drag-handle',
+      draggable:'.driver-card:not(.delivered)',
+      ghostClass:'sortable-ghost',
+      chosenClass:'sortable-chosen',
+      dragClass:'sortable-drag',
+      forceFallback:true,
+      fallbackTolerance:3,
+      onMove:function(event){return !event.related.classList.contains('delivered');},
+      onEnd:function(){
+        var byId={};driverOrders.forEach(function(order){byId[order.id]=order;});
+        var pendingIds=Array.from(container.querySelectorAll('.driver-card:not(.delivered)')).map(function(card){return card.getAttribute('data-order-id');});
+        var delivered=driverDeliveredOrders();
+        driverOrders=pendingIds.map(function(id){return byId[id];}).filter(Boolean).concat(delivered);
+        driverApplyOrderChange('Orden actualizado y guardado.');
+      }
+    });
   }
   async function driverCalculate(optimize){
     if(!driverOrders.length)return;
@@ -598,19 +655,44 @@
     });
     document.getElementById('driver-distance').textContent=(totalDistance/1000).toFixed(1)+' km';
     document.getElementById('driver-finish').textContent=driverClock(now);
-    document.getElementById('driver-route-status').textContent=optimize?'Ruta optimizada. Podés modificarla con las flechas y guardar.':'Horarios recalculados.';
+    document.getElementById('driver-route-status').textContent=optimize?'Ruta optimizada.':'Horarios actualizados.';
     driverRenderCards();driverRenderMap();await driverDrawRoute(points);
   }
   async function driverMove(index,action){
+    if(!canManageDriverRoute())return;
     var pendingCount=driverPendingOrders().length;
     if(action==='up'&&index>0){var item=driverOrders.splice(index,1)[0];driverOrders.splice(index-1,0,item);}
     if(action==='down'&&index<pendingCount-1){var moved=driverOrders.splice(index,1)[0];driverOrders.splice(index+1,0,moved);}
-    await driverCalculate(false);
+    if(action==='next'&&index>0&&index<pendingCount){var next=driverOrders.splice(index,1)[0];driverOrders.unshift(next);}
+    await driverApplyOrderChange(action==='next'?'La próxima entrega fue actualizada.':'Orden actualizado y guardado.');
+  }
+  async function driverSaveOrder(){
+    if(!driverRoute||!driverOrders.length||!canManageDriverRoute())return;
+    var updates={},routeStops=[];
+    driverOrders.forEach(function(order,index){
+      routeStops.push({pedidoId:order.id,orden:index+1,estimadoLlegada:order.eta,destino:order.destino});
+      updates['pedidos/'+order.id+'/orden']=index+1;updates['pedidos/'+order.id+'/estimadoLlegada']=order.eta;
+    });
+    updates['rutas/'+routeId+'/pedidos']=routeStops;updates['rutas/'+routeId+'/actualizada']=Date.now();
+    await db.ref().update(updates);
+  }
+  async function driverApplyOrderChange(successMessage){
+    var version=++driverOrderVersion;
+    document.getElementById('driver-route-status').textContent='Calculando y guardando el nuevo orden...';
+    try{
+      await driverCalculate(false);
+      if(version!==driverOrderVersion)return;
+      await driverSaveOrder();
+      if(version===driverOrderVersion)document.getElementById('driver-route-status').textContent=successMessage;
+    }catch(error){
+      if(version===driverOrderVersion)document.getElementById('driver-route-status').textContent='No se pudo guardar el nuevo orden: '+error.message;
+    }
   }
   var driverLoadVersion=0,driverRouteRef=null,driverTodayRef=null;
 
   function driverShowEmpty(){
     driverRoute=null;driverOrders=[];
+    driverReorderMode=false;if(driverSortable){driverSortable.destroy();driverSortable=null;}driverUpdateReorderControls();
     document.getElementById('driver-home-state').style.display='block';
     if(expandedDriverMap)expandedDriverMap();
     document.getElementById('driver-active-content').style.display='none';
@@ -621,9 +703,8 @@
     var mine=canManageDriverRoute(),inProgress=driverRoute&&driverRoute.estadoRuta==='en_curso';
     startButton.disabled=mine||inProgress||!driverRoute;
     startButton.textContent=mine?'Recorrido iniciado':(inProgress?'En curso en otro celular':'Iniciar recorrido');
-    document.getElementById('driver-optimize').disabled=!mine;
-    document.getElementById('driver-recalculate').disabled=!mine;
-    document.getElementById('driver-save').disabled=!mine;
+    document.getElementById('driver-reorder').disabled=!mine;
+    if(!mine&&driverReorderMode){driverReorderMode=false;driverUpdateReorderControls();}
   }
   function driverSubscribeRoute(selectedRouteId){
     if(driverRouteRef&&routeId===selectedRouteId)return;
@@ -694,23 +775,7 @@
       if(!result.committed)throw new Error('La ruta ya fue iniciada desde otro celular.');
     }catch(error){document.getElementById('driver-route-status').textContent=error.message;driverApplyAccessState();}
   });
-  document.getElementById('driver-optimize').addEventListener('click',function(){if(canManageDriverRoute())driverCalculate(true);});
-  document.getElementById('driver-recalculate').addEventListener('click',function(){if(canManageDriverRoute())driverCalculate(false);});
-  document.getElementById('driver-save').addEventListener('click',async function(){
-    if(!driverRoute||!driverOrders.length||!canManageDriverRoute())return;
-    var button=this;button.disabled=true;button.textContent='Guardando...';
-    try{
-      var updates={},routeStops=[];
-      driverOrders.forEach(function(order,index){
-        routeStops.push({pedidoId:order.id,orden:index+1,estimadoLlegada:order.eta,destino:order.destino});
-        updates['pedidos/'+order.id+'/orden']=index+1;updates['pedidos/'+order.id+'/estimadoLlegada']=order.eta;
-      });
-      updates['rutas/'+routeId+'/pedidos']=routeStops;updates['rutas/'+routeId+'/actualizada']=Date.now();
-      await db.ref().update(updates);
-      document.getElementById('driver-route-status').textContent='Cambios guardados. Esta es ahora la ruta activa del día.';
-    }catch(error){document.getElementById('driver-route-status').textContent='No se pudo guardar: '+error.message;}
-    finally{button.disabled=false;button.textContent='Guardar cambios';}
-  });
+  document.getElementById('driver-reorder').addEventListener('click',function(){if(canManageDriverRoute())driverSetReorderMode(!driverReorderMode);});
   if(permanentDriverMode)driverLoadToday();else if(routeId)driverLoadRoute();
 </script>
 </body>
